@@ -1,0 +1,71 @@
+{
+  "run_id": 20260730001,
+  "run_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260730-skillsbench-opus46-optimize.md",
+  "bench": "skillsbench",
+  "tier": "full",
+  "event": "local",
+  "source": "bcarmeli",
+  "pr": null,
+  "branch": null,
+  "sha": null,
+  "date": "2026-07-30T03:40:50Z",
+  "iterations": 3,
+  "trials": 1,
+  "agent_model": "claude-opus-4-6",
+  "optimizer_model": "claude-opus-4-6",
+  "conclusion": "success",
+  "schema": 1,
+  "summary_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260730-skillsbench-opus46-optimize.md",
+  "tasks": [],
+  "steps": [
+    {
+      "phase": "optimize",
+      "iter": 1,
+      "candidate": "cand_0001",
+      "accepted": true,
+      "reward": 0.3574214597701149,
+      "optimizer_usd": 21.440022,
+      "optimizer_seconds": 1022.99,
+      "eval_usd": 0,
+      "eval_seconds": 7232.47
+    },
+    {
+      "phase": "optimize",
+      "iter": 2,
+      "candidate": "cand_0002",
+      "accepted": false,
+      "reward": 0.3247471264367816,
+      "optimizer_usd": 15.67399,
+      "optimizer_seconds": 2134.92,
+      "eval_usd": 0,
+      "eval_seconds": 7100.04
+    },
+    {
+      "phase": "optimize",
+      "iter": 3,
+      "candidate": "cand_0003",
+      "accepted": false,
+      "reward": 0.1703103448275862,
+      "optimizer_usd": 8.622109,
+      "optimizer_seconds": 1195.56,
+      "eval_usd": 0,
+      "eval_seconds": 11332.47
+    }
+  ],
+  "suite": {
+    "reward_base": 0.2808965517241379,
+    "reward_opt": 0.3574214597701149,
+    "n": 87,
+    "eval_usd": 0,
+    "optimizer_usd": 32.0,
+    "eval_seconds": 29397.53,
+    "optimizer_seconds": 4353.469999999999
+  },
+  "counts": {
+    "passed": 28,
+    "partial": 5,
+    "errored": 8,
+    "failed": 46
+  },
+  "note": "Local 3-iter hill-climb optimization run (opus-4-6 as both agent-under-test and optimizer). Fit-metric split (train==val==test = all 87 tasks). The finalize step's baseline-test re-evaluation was broken by an overnight VPN drop; test_baseline_reward was spliced from the properly-scored seed val in run_baseline_opus (fit-metric: test == val by construction). See PATCH_NOTE.md in the run dir."
+}

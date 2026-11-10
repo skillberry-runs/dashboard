@@ -1,0 +1,4 @@
+site/benchmarks.json
+site/meta.json
+.DS_Store
+__pycache__/

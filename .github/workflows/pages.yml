@@ -1,0 +1,62 @@
+name: Deploy dashboard
+
+# Publishes site/ to GitHub Pages (https://skillberry-runs.github.io/dashboard/),
+# with benchmarks.json/meta.json rendered fresh from records/ on every deploy.
+# The aggregate is never committed: it's every record ever written, so committing
+# it per run would rewrite an ever-growing file forever. records/<id>.json is the
+# source of truth (one small additive file per run).
+#
+# Triggers: a push to main that touches records/, site/, scripts/ or this file;
+# manual dispatch, which is also how an external writer (e.g. cap-evolve's CI,
+# running as skillberry-bot) can request a redeploy after adding records.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "records/**"
+      - "site/**"
+      - "scripts/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Render benchmarks.json + meta.json from records/
+        run: |
+          python3 scripts/record.py aggregate records \
+            --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out site
+          python3 -c "import json; m=json.load(open('site/meta.json')); print(m); assert m['count'] > 0, 'no records rendered'"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

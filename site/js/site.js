@@ -1,0 +1,149 @@
+/* cap-evolve site — tiny, dependency-free progressive enhancement.
+   Theme is applied pre-paint by an inline <head> script (no FOUC); this file
+   wires the toggle, scroll-reveal, TOC scrollspy, and code copy buttons. */
+(function () {
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── theme toggle ── */
+  var KEY = "capevolve-theme";
+  var toggle = document.querySelector(".theme-toggle");
+  if (toggle) {
+    toggle.addEventListener("click", function () {
+      var cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      var next = cur === "light" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+      toggle.setAttribute("aria-label", next === "light" ? "Switch to dark theme" : "Switch to light theme");
+    });
+  }
+
+  /* ── scroll-reveal ── */
+  var reveals = document.querySelectorAll(".reveal");
+  if (reduce || !("IntersectionObserver" in window)) {
+    reveals.forEach(function (el) { el.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    reveals.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ── code copy buttons ── */
+  document.querySelectorAll("pre").forEach(function (pre) {
+    if (pre.querySelector(".copy-btn")) return;
+    var code = pre.querySelector("code") || pre;
+    var btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.type = "button";
+    btn.textContent = "copy";
+    btn.addEventListener("click", function () {
+      navigator.clipboard.writeText(code.innerText.replace(/\n$/, "")).then(function () {
+        btn.textContent = "copied"; btn.classList.add("done");
+        setTimeout(function () { btn.textContent = "copy"; btn.classList.remove("done"); }, 1400);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  /* ── mobile nav disclosure ── */
+  var navToggle = document.querySelector(".nav-toggle");
+  var navLinks = document.getElementById("nav-links");
+  if (navToggle && navLinks) {
+    var setNav = function (open) {
+      navLinks.classList.toggle("open", open);
+      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    };
+    var navOpen = function () { return navToggle.getAttribute("aria-expanded") === "true"; };
+    navToggle.addEventListener("click", function () { setNav(!navOpen()); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && navOpen()) { setNav(false); navToggle.focus(); }
+    });
+    document.addEventListener("click", function (e) {
+      if (navOpen() && !navToggle.contains(e.target) && !navLinks.contains(e.target)) setNav(false);
+    });
+    /* matchMedia, not resize: iOS fires resize when it collapses its URL bar mid-scroll,
+       with no real width change, which would slam the menu shut under the user's thumb. */
+    window.matchMedia("(min-width: 861px)").addEventListener("change", function (e) {
+      if (e.matches) setNav(false);
+    });
+  }
+
+  /* ── TOC scrollspy ── */
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".toc a[href^='#']"));
+  if (tocLinks.length && "IntersectionObserver" in window) {
+    var targets = tocLinks
+      .map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); })
+      .filter(Boolean);
+    var byId = {};
+    tocLinks.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          tocLinks.forEach(function (a) { a.classList.remove("active"); });
+          var link = byId[e.target.id];
+          if (link) link.classList.add("active");
+        }
+      });
+    }, { rootMargin: "-15% 0px -70% 0px", threshold: 0 });
+    targets.forEach(function (t) { spy.observe(t); });
+  }
+
+  /* ── click-to-enlarge screenshots ── */
+  var shots = document.querySelectorAll(".shot img, .hero-screenshot img");
+  if (shots.length) {
+    var box = document.createElement("div");
+    box.className = "lightbox";
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", "Enlarged image");
+    box.hidden = true;
+    var big = document.createElement("img");
+    var close = document.createElement("button");
+    close.className = "lightbox-close";
+    close.type = "button";
+    close.setAttribute("aria-label", "Close");
+    close.textContent = "×";
+    box.appendChild(big);
+    box.appendChild(close);
+    document.body.appendChild(box);
+    var opener = null;
+    var hide = function () {
+      box.hidden = true;
+      box.classList.remove("full");
+      document.body.classList.remove("lightbox-open");
+      if (opener) opener.focus();
+    };
+    var show = function (img) {
+      opener = img;
+      big.src = img.currentSrc || img.src;
+      big.alt = img.alt;
+      box.hidden = false;
+      document.body.classList.add("lightbox-open");
+      close.focus();
+    };
+    Array.prototype.forEach.call(shots, function (img) {
+      img.classList.add("zoomable");
+      img.tabIndex = 0;
+      img.setAttribute("role", "button");
+      img.setAttribute("aria-label", "Enlarge: " + (img.alt || "image"));
+      img.addEventListener("click", function () { show(img); });
+      img.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); show(img); }
+      });
+    });
+    // First click fits the image to the screen; clicking it again shows it at full size
+    // (scroll to pan). A click outside the image, the × or Escape closes.
+    big.addEventListener("click", function (e) {
+      e.stopPropagation();
+      box.classList.toggle("full");
+    });
+    close.addEventListener("click", function (e) { e.stopPropagation(); hide(); });
+    box.addEventListener("click", hide);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !box.hidden) hide();
+    });
+  }
+})();

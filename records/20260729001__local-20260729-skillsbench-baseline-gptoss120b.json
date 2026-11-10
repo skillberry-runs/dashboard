@@ -1,0 +1,37 @@
+{
+  "run_id": 20260729001,
+  "run_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260729-skillsbench-baseline-gptoss120b.md",
+  "bench": "skillsbench",
+  "tier": "full",
+  "event": "local",
+  "source": "bcarmeli",
+  "pr": null,
+  "branch": null,
+  "sha": null,
+  "date": "2026-07-29T08:12:01Z",
+  "iterations": 0,
+  "trials": 1,
+  "agent_model": "aws/gpt-oss-120b",
+  "optimizer_model": "none",
+  "conclusion": "success",
+  "schema": 1,
+  "summary_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260729-skillsbench-baseline-gptoss120b.md",
+  "tasks": [],
+  "steps": [],
+  "suite": {
+    "reward_base": 0.039597701149425284,
+    "reward_opt": 0.039597701149425284,
+    "n": 87,
+    "eval_usd": 0,
+    "optimizer_usd": 0,
+    "eval_seconds": 7078.33,
+    "optimizer_seconds": 0
+  },
+  "counts": {
+    "passed": 2,
+    "partial": 4,
+    "errored": 11,
+    "failed": 70
+  },
+  "note": "Local run (not a GitHub Actions workflow); recorded manually. Fit-metric split (train==val==test = all 87). No optimization iterations."
+}

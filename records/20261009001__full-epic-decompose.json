@@ -1,0 +1,41 @@
+{
+  "run_id": 202,
+  "bench": "epic-decompose",
+  "tier": "full",
+  "event": "manual",
+  "source": "epic-glm53-v5 finalized",
+  "branch": "main",
+  "sha": "476d4313",
+  "date": "2026-10-09T18:47:56Z",
+  "iterations": 3,
+  "trials": 1,
+  "agent_model": "GLM 5.3 (Claude Code harness)",
+  "optimizer_model": "GLM 5.3 (via PriceTag AI Gateway)",
+  "algorithm": "hill-climb",
+  "conclusion": "success",
+  "has_ui": true,
+  "reward_baseline": 0.8611111111111112,
+  "reward_opt": 0.8611111111111112,
+  "delta": 0.0,
+  "suite": {
+    "reward_base": 0.8611111111111112,
+    "reward_opt": 0.8611111111111112,
+    "eval_usd": 137.300158,
+    "optimizer_usd": 24.605936999999997,
+    "eval_seconds": 81762.76106119156,
+    "n": 10
+  },
+  "tasks": [
+    { "task": "case-021-real-pqc-base-image-compliance", "reward_baseline": 0.8611, "reward_opt": 1.0 },
+    { "task": "case-022-real-kueue-scheduling-visibility-ui", "reward_baseline": 0.8611, "reward_opt": 1.0 },
+    { "task": "case-023-real-maas-xks-deployment", "reward_baseline": 0.8611, "reward_opt": 0.0 },
+    { "task": "case-024-real-default-vector-store", "reward_baseline": 0.8611, "reward_opt": 0.75 },
+    { "task": "case-025-real-eval-job-progress-ui", "reward_baseline": 0.8611, "reward_opt": 1.0 },
+    { "task": "case-026-real-agent-operator-productization", "reward_baseline": 0.8611, "reward_opt": 0.75 },
+    { "task": "case-027-real-feature-store-admin-ui", "reward_baseline": 0.8611, "reward_opt": 1.0 },
+    { "task": "case-028-real-standalone-keda-autoscaling", "reward_baseline": 0.8611, "reward_opt": 0.75 },
+    { "task": "case-029-real-mlflow-workspace-artifact-serving", "reward_baseline": 0.8611, "reward_opt": 0.75 },
+    { "task": "case-030-real-operator-structured-logging", "reward_baseline": 0.8611, "reward_opt": 0.75 }
+  ],
+  "note": "Judge overflow fixed in this run; all 10 test cases scored cleanly. Optimizer hit GLM 5.3's 275k context limit on cand_0003 generation (211k input + 64k output). All 3 candidates regressed on validation; seed retained."
+}

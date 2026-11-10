@@ -1,0 +1,138 @@
+{
+  "run_id": 30704149005,
+  "run_url": "https://github.com/skillberry-ai/cap-evolve/actions/runs/30704149005",
+  "bench": "spreadsheetbench",
+  "tier": "pilot",
+  "event": "workflow_dispatch",
+  "source": "manual (main)",
+  "pr": null,
+  "branch": "main",
+  "sha": "5042d07e89bc52005a57161f4420fd7ae8316929",
+  "date": "2026-08-01T15:41:36Z",
+  "iterations": 2,
+  "trials": 1,
+  "agent_model": "azure/gpt-5.5",
+  "optimizer_model": "claude-opus-4-8",
+  "conclusion": "success",
+  "schema": 1,
+  "tasks": [
+    {
+      "bench": "spreadsheetbench",
+      "tier": "pilot",
+      "task": "118-8",
+      "reward_baseline": 0.0,
+      "reward_opt": 0.0,
+      "reward_delta": 0.0,
+      "opt_infra": false,
+      "run_dir": "/vol/home/skillberry/.cache/capevolve-gh-runner/_work/cap-evolve/cap-evolve/ci/benchmarks/.work/suite_pilot_spreadsheetbench_proj/.capevolve/run_suite"
+    },
+    {
+      "bench": "spreadsheetbench",
+      "tier": "pilot",
+      "task": "203-16",
+      "reward_baseline": 1.0,
+      "reward_opt": 1.0,
+      "reward_delta": 0.0,
+      "opt_infra": false,
+      "run_dir": "/vol/home/skillberry/.cache/capevolve-gh-runner/_work/cap-evolve/cap-evolve/ci/benchmarks/.work/suite_pilot_spreadsheetbench_proj/.capevolve/run_suite"
+    },
+    {
+      "bench": "spreadsheetbench",
+      "tier": "pilot",
+      "task": "43213",
+      "reward_baseline": 1.0,
+      "reward_opt": 1.0,
+      "reward_delta": 0.0,
+      "opt_infra": false,
+      "run_dir": "/vol/home/skillberry/.cache/capevolve-gh-runner/_work/cap-evolve/cap-evolve/ci/benchmarks/.work/suite_pilot_spreadsheetbench_proj/.capevolve/run_suite"
+    },
+    {
+      "bench": "spreadsheetbench",
+      "tier": "pilot",
+      "task": "55977",
+      "reward_baseline": 0.0,
+      "reward_opt": 1.0,
+      "reward_delta": 1.0,
+      "opt_infra": false,
+      "run_dir": "/vol/home/skillberry/.cache/capevolve-gh-runner/_work/cap-evolve/cap-evolve/ci/benchmarks/.work/suite_pilot_spreadsheetbench_proj/.capevolve/run_suite"
+    },
+    {
+      "bench": "spreadsheetbench",
+      "tier": "pilot",
+      "task": "57448",
+      "reward_baseline": 0.0,
+      "reward_opt": 0.0,
+      "reward_delta": 0.0,
+      "opt_infra": false,
+      "run_dir": "/vol/home/skillberry/.cache/capevolve-gh-runner/_work/cap-evolve/cap-evolve/ci/benchmarks/.work/suite_pilot_spreadsheetbench_proj/.capevolve/run_suite"
+    }
+  ],
+  "steps": [
+    {
+      "phase": "baseline",
+      "iter": null,
+      "candidate": "seed",
+      "accepted": null,
+      "reward": 0.5133333333333333,
+      "optimizer_usd": 0.0,
+      "optimizer_seconds": 0.0,
+      "eval_usd": 3.040959999999999,
+      "eval_seconds": 584.1
+    },
+    {
+      "phase": "iterate",
+      "iter": 1,
+      "candidate": "cand_0001",
+      "accepted": true,
+      "reward": 0.62,
+      "optimizer_usd": 3.50012,
+      "optimizer_seconds": 1040.47,
+      "eval_usd": 3.4492124999999993,
+      "eval_seconds": 600.5
+    },
+    {
+      "phase": "iterate",
+      "iter": 2,
+      "candidate": "cand_0002",
+      "accepted": false,
+      "reward": 0.5666666666666667,
+      "optimizer_usd": 2.17975,
+      "optimizer_seconds": 488.01,
+      "eval_usd": 3.5463325000000006,
+      "eval_seconds": 638.38
+    },
+    {
+      "phase": "finalize",
+      "iter": null,
+      "candidate": "cand_0001",
+      "accepted": null,
+      "reward": 0.6,
+      "optimizer_usd": 0.0,
+      "optimizer_seconds": 0.0,
+      "eval_usd": 0.4301150000000001,
+      "eval_seconds": 164.86
+    },
+    {
+      "phase": "finalize_baseline",
+      "iter": null,
+      "candidate": "seed",
+      "accepted": null,
+      "reward": 0.4,
+      "optimizer_usd": 0.0,
+      "optimizer_seconds": 0.0,
+      "eval_usd": 0.5104125,
+      "eval_seconds": 176.27
+    }
+  ],
+  "suite": {
+    "reward_base": 0.4,
+    "reward_opt": 0.6,
+    "n": 5,
+    "eval_usd": 10.977032,
+    "optimizer_usd": 5.67987,
+    "eval_seconds": 2164.11,
+    "optimizer_seconds": 1528.48
+  },
+  "has_ui": true,
+  "rebuilt_from_artifact": true
+}

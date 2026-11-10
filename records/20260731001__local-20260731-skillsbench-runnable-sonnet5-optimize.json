@@ -1,0 +1,73 @@
+{
+  "run_id": 20260731001,
+  "run_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260730-skillsbench-runnable-sonnet5-optimize.md",
+  "bench": "skillsbench",
+  "tier": "full",
+  "experiment": "runnable-subset-43",
+  "event": "local",
+  "source": "bcarmeli",
+  "pr": null,
+  "branch": null,
+  "sha": null,
+  "date": "2026-07-30T19:18:00Z",
+  "iterations": 3,
+  "trials": 3,
+  "agent_model": "claude-sonnet-5",
+  "optimizer_model": "claude-opus-4-8",
+  "conclusion": "cancelled",
+  "schema": 1,
+  "summary_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260730-skillsbench-runnable-sonnet5-optimize.md",
+  "report_url": "https://skillberry-ai.github.io/cap-evolve/skillsbench/results/runnable-43task-opt/summary.html",
+  "tasks": [],
+  "steps": [
+    {
+      "phase": "optimize",
+      "iter": 1,
+      "candidate": "cand_0001",
+      "accepted": true,
+      "reward": 0.14728682170542634,
+      "optimizer_usd": 14.013555,
+      "optimizer_seconds": 1398.96,
+      "eval_usd": 0,
+      "eval_seconds": 13253.79
+    },
+    {
+      "phase": "optimize",
+      "iter": 2,
+      "candidate": "cand_0002",
+      "accepted": true,
+      "reward": 0.17054263565891473,
+      "optimizer_usd": 15.33239,
+      "optimizer_seconds": 2702.66,
+      "eval_usd": 0,
+      "eval_seconds": 11746.84
+    },
+    {
+      "phase": "optimize",
+      "iter": 3,
+      "candidate": "cand_0003",
+      "accepted": false,
+      "reward": 0.15503875968992248,
+      "optimizer_usd": 15.08301,
+      "optimizer_seconds": 1400.1,
+      "eval_usd": 0,
+      "eval_seconds": 13178.8
+    }
+  ],
+  "suite": {
+    "reward_base": 0.13953488372093023,
+    "reward_opt": 0.17054263565891473,
+    "n": 43,
+    "eval_usd": 0,
+    "optimizer_usd": 44.428955,
+    "eval_seconds": 52701.43,
+    "optimizer_seconds": 5501.72
+  },
+  "counts": {
+    "passed": 4,
+    "partial": 7,
+    "errored": 0,
+    "failed": 32
+  },
+  "note": "Cancelled at iter 4 optimizer step. Iters 0-3 completed cleanly on the 43-task RUNNABLE subset (filtered on the CCC-podman environment). Best = cand_0002 @ val=0.1705 (+3.11pp over seed's 0.1395). Iter 3 was rejected by the paired-SE gate (cand_0003 regressed by 1.55pp). Iter 4 optimizer step wedged after ~13min of normal token spend (partial cost ~$4.35 not counted in optimizer_usd here); no forward progress for ~1h 49min - job killed under the pre-agreed 90-min-stall rule. Iters 5-7 not attempted. Run dir preserved as .capevolve/run_runnable_iter7_v1_KILLED_iter4_optimizer_hung_2h/ for potential --resume. See docs/runs/local-20260730-skillsbench-runnable-sonnet5-optimize.md for full details."
+}
