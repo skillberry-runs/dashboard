@@ -6,9 +6,11 @@ name: Deploy dashboard
 # it per run would rewrite an ever-growing file forever. records/<id>.json is the
 # source of truth (one small additive file per run).
 #
+# Also renders the parsec and spreadsheetbench report sections (see below).
+#
 # Triggers: a push to main that touches records/, site/, scripts/ or this file;
-# manual dispatch, which is also how an external writer (e.g. cap-evolve's CI,
-# running as skillberry-bot) can request a redeploy after adding records.
+# manual dispatch, which is also how an external writer (cap-evolve's CI, or a
+# results repo's notify workflow, running as skillberry-bot) requests a redeploy.
 
 on:
   push:
@@ -44,6 +46,45 @@ jobs:
           python3 scripts/record.py aggregate records \
             --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out site
           python3 -c "import json; m=json.load(open('site/meta.json')); print(m); assert m['count'] > 0, 'no records rendered'"
+
+      # Benchmark report sections: render each skillberry-runs results repo's
+      # write-ups and report pages under site/<bench>/ (scripts/build_reports.py;
+      # raw data/recipes/artifacts are not published, internal paths are masked).
+      #
+      # The repos are private, so cloning needs RESULTS_READ_TOKEN: a skillberry-bot
+      # fine-grained token with Contents: read on skillberry-runs/{parsec,spreadsheetbench}.
+      # Transition fallback while that secret isn't set: read the identical legacy
+      # orphan branches on the public skillberry-ai/cap-evolve repo instead. Once the
+      # token is in place and those branches are deleted, the fallback just fails over
+      # to a loud error.
+      - name: Render benchmark report sections
+        env:
+          RESULTS_READ_TOKEN: ${{ secrets.RESULTS_READ_TOKEN }}
+        run: |
+          pip install --quiet markdown
+          for spec in "parsec|Parsec|parsec-history" "spreadsheetbench|SpreadsheetBench|spreadsheet-history"; do
+            IFS='|' read -r repo title legacy <<<"$spec"
+            rm -rf "_src_$repo"
+            if [ -n "$RESULTS_READ_TOKEN" ]; then
+              git clone --depth 1 \
+                "https://x-access-token:${RESULTS_READ_TOKEN}@github.com/skillberry-runs/$repo.git" "_src_$repo" || {
+                  echo "::error::RESULTS_READ_TOKEN is set but cloning skillberry-runs/$repo failed (expired or under-scoped token?)"; exit 1; }
+            else
+              echo "::warning::RESULTS_READ_TOKEN not set; rendering $title from the legacy cap-evolve $legacy branch"
+              git clone --depth 1 --branch "$legacy" \
+                "https://github.com/skillberry-ai/cap-evolve.git" "_src_$repo" || {
+                  echo "::error::no source reachable for $title (no token, legacy branch gone)"; exit 1; }
+            fi
+            python3 scripts/build_reports.py --src "_src_$repo" --out "site/$repo" \
+              --repo "skillberry-runs/$repo" --title "$title"
+            test -f "site/$repo/index.html"
+          done
+
+      # Run notes for hand-published local runs (linked from records' summary_url).
+      - name: Render run notes
+        run: |
+          python3 scripts/build_reports.py --src notes --out site/notes \
+            --repo skillberry-runs/dashboard --src-prefix notes --title "Run notes"
 
       - uses: actions/configure-pages@v5
 

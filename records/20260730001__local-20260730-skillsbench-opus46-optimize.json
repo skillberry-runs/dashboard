@@ -1,6 +1,6 @@
 {
   "run_id": 20260730001,
-  "run_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260730-skillsbench-opus46-optimize.md",
+  "run_url": "https://skillberry-runs.github.io/dashboard/notes/runs/local-20260730-skillsbench-opus46-optimize.html",
   "bench": "skillsbench",
   "tier": "full",
   "event": "local",
@@ -15,7 +15,7 @@
   "optimizer_model": "claude-opus-4-6",
   "conclusion": "success",
   "schema": 1,
-  "summary_url": "https://github.com/skillberry-ai/cap-evolve/blob/benchmark-history/docs/runs/local-20260730-skillsbench-opus46-optimize.md",
+  "summary_url": "https://skillberry-runs.github.io/dashboard/notes/runs/local-20260730-skillsbench-opus46-optimize.html",
   "tasks": [],
   "steps": [
     {

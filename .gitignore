@@ -2,3 +2,7 @@ site/benchmarks.json
 site/meta.json
 .DS_Store
 __pycache__/
+site/parsec/
+site/spreadsheetbench/
+_src_*/
+site/notes/

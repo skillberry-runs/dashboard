@@ -21,6 +21,20 @@ cap-evolve's benchmark results, one repo per benchmark.
 
 `benchmarks.json`/`meta.json` are **not committed**. They're regenerated on every deploy.
 
+## Benchmark report sections
+
+`/parsec/` and `/spreadsheetbench/` publish the write-ups (`*.md`, rendered) and report pages
+(`ui/*.html`) of [`skillberry-runs/parsec`](https://github.com/skillberry-runs/parsec) and
+[`skillberry-runs/spreadsheetbench`](https://github.com/skillberry-runs/spreadsheetbench).
+`scripts/build_reports.py` renders them on every deploy. It does **not** publish raw results
+data, `recipes/`, `artifacts/` or `presentations/`; links to those go to the private repo on
+GitHub. It also masks internal cluster paths and host names in what it does publish. `/notes/`
+renders `notes/`: hand-written notes for locally-run records, linked from their Source column.
+
+Those repos are private, so the deploy reads them with `RESULTS_READ_TOKEN`, a `skillberry-bot`
+fine-grained token with *Contents: read* on both. Until that secret is set, it falls back to the
+identical legacy branches on public `skillberry-ai/cap-evolve`.
+
 ## Preview locally
 
 ```bash
