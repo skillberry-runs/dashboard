@@ -68,7 +68,13 @@ jobs:
             if [ -n "$RESULTS_READ_TOKEN" ]; then
               git clone --depth 1 \
                 "https://x-access-token:${RESULTS_READ_TOKEN}@github.com/skillberry-runs/$repo.git" "_src_$repo" || {
-                  echo "::error::RESULTS_READ_TOKEN is set but cloning skillberry-runs/$repo failed (expired or under-scoped token?)"; exit 1; }
+                  # Say WHY: who the token is, and GitHub's own reason for refusing it.
+                  api() { curl -s -H "Authorization: Bearer $RESULTS_READ_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/$1"; }
+                  echo "token owner: $(api user | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("login") or d.get("message"))')"
+                  echo "repo check:  $(api repos/skillberry-runs/$repo | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("full_name") or d.get("message"))')"
+                  curl -s -o /dev/null -D - -H "Authorization: Bearer $RESULTS_READ_TOKEN" "https://api.github.com/repos/skillberry-runs/$repo" \
+                    | grep -iE '^(x-accepted-github-permissions|github-authentication-token-expiration|x-github-sso):' || true
+                  echo "::error::RESULTS_READ_TOKEN is set but cloning skillberry-runs/$repo failed (expired, under-scoped, or blocked by org token policy?)"; exit 1; }
             else
               echo "::warning::RESULTS_READ_TOKEN not set; rendering $title from the legacy cap-evolve $legacy branch"
               git clone --depth 1 --branch "$legacy" \
