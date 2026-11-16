@@ -115,7 +115,7 @@ jobs:
       - name: Render run notes
         run: |
           python3 scripts/build_reports.py --src notes --out site/notes \
-            --repo skillberry-runs/dashboard --src-prefix notes --title "Run notes"
+            --repo skillberry-runs/dashboard --src-prefix notes --source-public --title "Run notes"
 
       - uses: actions/configure-pages@v5
 

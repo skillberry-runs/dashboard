@@ -36,6 +36,8 @@ UNPUBLISHED_TOP = {".git", ".github", "artifacts", "recipes", "presentations"}
 SKIP_FILES = {".gitignore"}
 MD_EXTENSIONS = ["tables", "fenced_code", "toc", "attr_list", "sane_lists"]
 CAP_EVOLVE_SITE = "https://skillberry-ai.github.io/cap-evolve"
+DASHBOARD_REPO = "skillberry-runs/dashboard"  # public: the nav "GitHub" link goes here
+PRIVATE_TITLE = "Private repo: only skillberry-runs org members can open this (others get a 404)"
 SECTIONS_FILE = Path(__file__).resolve().parent.parent / "sections.json"
 
 
@@ -74,6 +76,7 @@ class Builder:
         self.src, self.out, self.repo, self.title, self.ref = src, out, repo, title, ref
         self.n_redacted = 0
         self.src_prefix = ""
+        self.private = True  # the results repos are private; --source-public for this (public) repo
 
     # ---- links -------------------------------------------------------------
     def gh_url(self, rel: str) -> str:
@@ -105,7 +108,9 @@ class Builder:
             new = self.map_target(cur_dir, path)
             if new is None:
                 return m.group(0)
-            ext = ' class="ext-link"' if new.startswith("https://") and attr == "href" else ""
+            ext = ""
+            if new.startswith("https://") and attr == "href":
+                ext = ' class="ext-link"' + (f' title="{PRIVATE_TITLE}"' if self.private else "")
             return f"{attr}={q}{new}{sep}{frag}{q}{ext}"
 
         text = re.sub(r'\b(href|src)=(["\'])([^"\']+?)\2', href, text)
@@ -131,7 +136,9 @@ class Builder:
         site = "/".join([".."] * (depth + 1))  # dashboard site root
         hub = "/".join([".."] * depth) or "."
         src_link = (
-            f'<a class="ext-link" href="{self.gh_url(source_rel)}">source</a>'
+            f'<a class="ext-link" href="{self.gh_url(source_rel)}" title="{PRIVATE_TITLE}">source ↗ (private)</a>'
+            if source_rel and self.private else
+            f'<a class="ext-link" href="{self.gh_url(source_rel)}">source ↗</a>'
             if source_rel else ""
         )
         t = html_lib.escape(title)
@@ -156,7 +163,7 @@ class Builder:
       <a href="{site}/">Benchmark runs</a>
 {section_nav(site)}
       <a href="{CAP_EVOLVE_SITE}/skillsbench/">SkillsBench</a>
-      <a class="gh" href="https://github.com/{self.repo}">GitHub</a>
+      <a class="gh" href="https://github.com/{DASHBOARD_REPO}">GitHub</a>
     </div>
   </div>
 </nav>
@@ -203,7 +210,9 @@ class Builder:
             f'<ul>{"".join(items)}</ul>'
             "<p class=\"muted\" style=\"font-size:0.88rem\">Raw results data, recipes, artifacts and "
             "presentations are not published here; links to them go to the source repo on GitHub "
-            "(team access). Internal cluster paths and host names are masked on this site.</p></div>\n"
+            "(private: only <code>skillberry-runs</code> org members can open them; anyone else gets a 404, "
+            "which means no access, not a broken link). Internal cluster paths and host names are masked "
+            "on this site.</p></div>\n"
         )
 
     def write(self, rel_out: str, text: str) -> None:
@@ -241,9 +250,12 @@ def main() -> int:
     ap.add_argument("--title", required=True, help="display name, e.g. Parsec")
     ap.add_argument("--ref", default="main")
     ap.add_argument("--src-prefix", default="", help="path of --src inside --repo (for source links)")
+    ap.add_argument("--source-public", action="store_true",
+                    help="--repo is public: no '(private)' labels on its links (e.g. notes/ in this repo)")
     a = ap.parse_args()
     b = Builder(a.src, a.out, a.repo, a.title, a.ref)
     b.src_prefix = a.src_prefix.strip("/")
+    b.private = not a.source_public
     stats = b.build()
     print(f"{a.title}: rendered {stats['md']} .md, copied {stats['html']} .html, masked {stats['redactions']} internal paths/hosts")
     return 0 if (a.out / "index.html").exists() else 1

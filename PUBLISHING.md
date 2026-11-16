@@ -32,7 +32,7 @@ brings those runs over. Making CI write here directly is a later step.)
 **1. Build the record.** Follow steps 1–4 of cap-evolve's
 [`ci/benchmarks/PUBLISHING.md`](https://github.com/skillberry-ai/cap-evolve/blob/main/ci/benchmarks/PUBLISHING.md):
 collect the run dir, run `metrics.py`, write `runmeta.json`, run `record.py build`. You end up with one
-JSON file. Stop before its "push to benchmark-history" step; the destination is this repo.
+JSON file. Stop there: its step 5 is where the record is published, and this section replaces it.
 
 **2. Name it** `<id>__<label>.json`: an id that sorts by time, two underscores, a short label.
 CI uses the Actions run id as the id; hand-published runs use `YYYYMMDDNNN` (for example
@@ -166,5 +166,5 @@ token is used (`gh secret set RESULTS_READ_TOKEN -R skillberry-runs/dashboard`, 
 | A row shows `—` for reward | `conclusion` is not `success`, or `suite` is empty because `record.py build` ran on an unfinished run. `check_records.py` warns about this. |
 | Deploy is red with `403` in the report step | `RESULTS_READ_TOKEN` expired, lacks *Contents: read* on a repo, or the repo is missing from its list. The log prints the token's owner and GitHub's stated reason. The last good site stays live. |
 | Deploy is red at "Validate records" | A record failed `scripts/check_records.py`; the error names the file and the problem. |
-| A link opens a 404 for someone outside the org | It points into a private repo. Link the published page instead (B). |
+| A link opens a 404 for someone outside the org | It points into a private repo (the site labels these "(private)"). In a record, link the published page instead (B). |
 | Sync run is red | A source record failed validation (listed as `REJECTED` in the log). Fix it at the source, or copy it by hand through A. |
