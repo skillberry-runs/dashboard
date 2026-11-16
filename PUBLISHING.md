@@ -10,10 +10,10 @@ brings those runs over. Making CI write here directly is a later step.)
 |---|---|---|
 | **Run rows** (the table) | `records/<id>__<label>.json` in **this repo** | yes: every row |
 | **Short notes** for hand-published runs | `notes/runs/<name>.md` in this repo | yes: `/notes/runs/<name>.html` |
-| **Write-ups and report pages** per benchmark | the benchmark's repo: `skillberry-runs/parsec`, `/spreadsheetbench` (private) | `*.md` and `ui/*.html` only, at `/<benchmark>/…` |
+| **Write-ups and report pages** per benchmark | the benchmark's repo: `skillberry-runs/parsec`, `/spreadsheetbench`, `/skillsbench` (private) | `*.md` and `ui/*.html` only, at `/<benchmark>/…` |
 | Raw data, `recipes/`, `artifacts/`, `presentations/` | the benchmark's repo | **no**: never published (they contain internal paths) |
-| SkillsBench | `skillberry-runs/skillsbench` (private) | rendered on **cap-evolve's** site, not here |
-| "Open UI" snapshots, "Watch live" data | cap-evolve's `benchmark-history` branch | served by cap-evolve's site (not migrated yet) |
+| **"Open UI" data** per run | the benchmark's repo: `ci_ui/<run_id>__<tier>-<bench>/` | yes: `/<benchmark>/ci_ui/…`, opened in the shared viewer (`site/viewer/`) |
+| "Open UI" data of benchmarks without a repo yet (tau2, SWE-bench, …), "Watch live" data | cap-evolve's `benchmark-history` branch | served by cap-evolve's site |
 
 ## Which section do I need?
 
@@ -24,6 +24,7 @@ brings those runs over. Making CI write here directly is a later step.)
 | attach a short note to a hand-published row | **C** |
 | bring over runs that cap-evolve's CI recorded on `benchmark-history` | **D** |
 | publish a benchmark that has no section yet (e.g. AppWorld) | **E** |
+| add or move a run's "Open UI" data | **F** |
 
 ---
 
@@ -87,8 +88,12 @@ Links *from* one published page to another are rewritten for you. Links to files
 published (`artifacts/…`, raw JSON) are sent to the private repo on GitHub, so they open for org
 members only.
 
-SkillsBench works differently: pushing to `skillberry-runs/skillsbench` rebuilds **cap-evolve's** site
-(its `notify-cap-evolve-pages.yml`), and its section lives there.
+A section's front page is its `HOME.md` if the repo has one (SkillsBench does: the experiment cards),
+otherwise its `README.md`.
+
+SkillsBench's section moved here from cap-evolve's site on 2026-11-16. Until cap-evolve drops its copy,
+pushing to `skillberry-runs/skillsbench` still rebuilds cap-evolve's site too (its
+`notify-cap-evolve-pages.yml`); this site needs the manual deploy above, like the others.
 
 ## C. A short note for a hand-published row
 
@@ -123,8 +128,8 @@ that fails validation is skipped and the run fails, so it cannot go unnoticed.
   and listed.
 - Without GitHub: `python3 scripts/sync_from_cap_evolve.py --dry-run`, then run it without `--dry-run`
   and commit.
-- **"Open UI" links** in copied rows point at cap-evolve's site, which serves those snapshots. They work
-  once cap-evolve's own site has deployed after the run was recorded.
+- **"Open UI" links** in copied rows open cap-evolve's copy of the snapshot until that run's data is
+  moved into its benchmark repo (F); then they open this site's shared viewer.
 
 ## E. Publish a new benchmark (for example AppWorld)
 
@@ -136,11 +141,56 @@ that fails validation is skipped and the run fails, so it cannot go unnoticed.
    (<https://github.com/settings/personal-access-tokens>, logged in as the bot), edit
    `skillberry-runs-read` and add the new repo under *Repository access*. Editing does not change the
    token's value, so no secret needs updating.
-3. **Register the section.** Add an entry to [`sections.json`](sections.json)
-   (`{"repo": "<benchmark>", "title": "<Display name>"}`; `legacy_branch` is only for the old cap-evolve
-   branches) and add a link next to the others in `site/index.html`'s menu. The menu on the section
-   pages follows `sections.json` by itself.
-4. **Deploy** (B) and open `/<benchmark>/`. Add its run rows with A.
+3. **Register the section.** Add an entry to [`sections.json`](sections.json):
+   `{"repo": "<benchmark>", "title": "<Display name>", "benches": ["<bench>", …]}`. `benches` lists the
+   `bench` values of the records whose "Open UI" data belongs in this repo (default: the repo name; a
+   `tau2` repo would list `tau2`, `tau2_sierra`, `tau2_custom_direct`, …). `legacy_branch` is only for
+   the old cap-evolve branches. Add a link next to the others in `site/index.html`'s menu; the menu on
+   the section pages follows `sections.json` by itself.
+4. **Move its runs' "Open UI" data** into the repo (F).
+5. **Deploy** (B) and open `/<benchmark>/`. Add its run rows with A.
+
+## F. "Open UI" data (`ci_ui/`) and the shared viewer
+
+Each run's "Open UI" is the CapEvolve dashboard for that run. The **data** lives in the benchmark's repo,
+one folder per run, named exactly like the run's row:
+
+```
+<benchmark repo>/ci_ui/<run_id>__<tier>-<bench>/      e.g. spreadsheetbench/ci_ui/36887395788__full_verified_probe-spreadsheetbench/
+```
+
+The **viewer** is one shared copy in this repo, `site/viewer/`. At deploy time each repo's `ci_ui/` is
+published to `/<benchmark>/ci_ui/` (internal paths and host names masked) and listed in `ui_index.json`;
+a row whose run is listed opens `viewer/index.html?dataBase=…`, any other row opens cap-evolve's copy.
+
+**Move runs from cap-evolve** (every record with `has_ui` whose `bench` belongs to a repo in
+`sections.json`; already-moved runs are skipped):
+
+```bash
+# with checkouts of the benchmark repos next to this one (../parsec, ../spreadsheetbench, …)
+python3 scripts/migrate_ui_snapshots.py --repos-dir .. --dry-run     # what would move
+python3 scripts/migrate_ui_snapshots.py --repos-dir .. --commit      # copy + commit in each repo
+git -C ../<repo> push                                                # then deploy (B)
+```
+
+Only each run's `ui/data/` is copied (not its copy of the viewer, nor raw run folders).
+
+**The secret scanner.** Commits to these repos go through IBM Vault Radar, which blocks text that looks
+like a credential. Run data contains false positives (AI tool-call ids read as a Mailsac key, a website's
+public OAuth client id, `pass=` in agent-written code). `migrate_ui_snapshots.py` masks the known ones
+before committing (`scripts/mask_secrets.py`: visible placeholders, tool-call ids mapped consistently so
+the viewer still pairs calls with results). If a commit is still blocked, the script saves the scanner's
+output and prints the command that masks exactly those findings; run it, then commit again. Never bypass
+the scanner. If a finding looks like a **real** secret, stop and tell the team: it is also public on
+cap-evolve's `benchmark-history`.
+
+**Add a hand-run snapshot** (not on cap-evolve): export it with cap-evolve's `export_static`
+(cap-evolve's `ci/benchmarks/PUBLISHING.md`, "Open UI" section), copy its `data/` folder to
+`<repo>/ci_ui/<run_id>__<tier>-<bench>/`, run `python3 scripts/mask_secrets.py <repo>/ci_ui`, commit, and
+set `"has_ui": true` in the run's record.
+
+**Update the viewer** to cap-evolve's latest dashboard: `scripts/update_viewer.sh` (needs node), then
+commit `site/viewer/`. Newer viewers open older runs' data (tested back to July 2026).
 
 ---
 

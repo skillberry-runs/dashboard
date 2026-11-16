@@ -1,4 +1,5 @@
 // Standalone copy of cap-evolve's site/benchmarks.js, hosted at skillberry-runs/dashboard.
+// "Open UI" opens this site's shared viewer for runs whose data it hosts (see UI_INDEX).
 // The feed (benchmarks.json/meta.json) is rendered from THIS repo's records/ by
 // .github/workflows/pages.yml. Things this repo does not host are linked on cap-evolve:
 // the per-run CapEvolve UI snapshots (benchmark-history's runs/**, ~3 GB) and the live
@@ -36,6 +37,18 @@ const benchLabel = (b) => BENCH_LABEL[b] || b;
 const FEED = new URLSearchParams(location.search).has("fixture")
   ? "benchmarks.fixture.json" : "benchmarks.json";
 let RECORDS = [], sortKey = "date", sortDir = -1;
+// ui_index.json (written by scripts/publish_ci_ui.py at deploy): which runs' "Open UI" data this
+// site hosts, as {"<run_id>__<tier>-<bench>": "<bench repo>/ci_ui/<slug>"}. Those open in the shared
+// viewer (viewer/); every other run still opens its snapshot on cap-evolve's site.
+let UI_INDEX = {};
+function openUiHref(r) {
+  const slug = `${r.run_id}__${r.tier || "smoke"}-${r.bench}`;
+  if (UI_INDEX[slug]) {
+    const data = new URL(UI_INDEX[slug], location.href).href;
+    return `viewer/index.html?dataBase=${encodeURIComponent(data)}#/runs/run_suite`;
+  }
+  return `${CAP_EVOLVE_SITE}/benchmark-ui/runs/${encodeURIComponent(r.run_id)}__${encodeURIComponent(r.tier || "smoke")}-${encodeURIComponent(r.bench)}/ui/index.html#/runs/run_suite`;
+}
 
 const $ = (s) => document.querySelector(s);
 const fmt = (v, d = 3) => (typeof v === "number" ? v.toFixed(d) : "—");
@@ -190,10 +203,12 @@ function fillSelect(sel, values) {
 
 async function load() {
   try {
-    const [recs, meta] = await Promise.all([
+    const [recs, meta, uiIndex] = await Promise.all([
       fetch(`${FEED}?t=${Date.now()}`).then((r) => r.json()),
       fetch(`meta.json?t=${Date.now()}`).then((r) => r.json()).catch(() => null),
+      fetch(`ui_index.json?t=${Date.now()}`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
     ]);
+    UI_INDEX = uiIndex && typeof uiIndex === "object" ? uiIndex : {};
     RECORDS = Array.isArray(recs) ? recs : [];
     const zh = $("#date-zone");
     if (zh) zh.textContent = ` (${localZone()})`;
@@ -297,7 +312,7 @@ function render() {
     // additive alongside `has_ui`'s CapEvolve UI snapshot link, not a replacement.
     const uiParts = [];
     if (r.has_ui) {
-      uiParts.push(`<a href="${CAP_EVOLVE_SITE}/benchmark-ui/runs/${encodeURIComponent(r.run_id)}__${esc(r.tier || "smoke")}-${encodeURIComponent(r.bench)}/ui/index.html#/runs/run_suite" target="_blank" rel="noopener">Open UI</a>`);
+      uiParts.push(`<a href="${esc(openUiHref(r))}" target="_blank" rel="noopener">Open UI</a>`);
     }
     if (r.report_url) {
       uiParts.push(`<a href="${esc(r.report_url)}" target="_blank" rel="noopener">Report ↗</a>`);

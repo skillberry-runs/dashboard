@@ -16,8 +16,7 @@ snapshots and live data are NOT, via a sparse partial clone):
   records/*.json   -> records/       new files only (or changed ones with --update-existing)
   docs/runs/*.md   -> notes/runs/    new files only
 Links in copied records that point at cap-evolve's retired `*-history` branches are
-repointed to where that content lives now (dashboard sections, cap-evolve's SkillsBench
-pages). Every copied record is validated with check_records.py first; one that fails is
+repointed to where that content lives now (the dashboard's sections, SkillsBench included). Every copied record is validated with check_records.py first; one that fails is
 skipped and reported, and the script exits 1 so the problem is visible.
 
 Writes GITHUB_OUTPUT (when set): `added`, `updated`, `changed` (true/false).
@@ -42,6 +41,9 @@ DEFAULT_BRANCH = "benchmark-history"
 DASHBOARD = "https://skillberry-runs.github.io/dashboard"
 CAP_EVOLVE_SITE = "https://skillberry-ai.github.io/cap-evolve"
 
+# Links to cap-evolve's rendered SkillsBench pages; that section now lives on the dashboard.
+SITE_LINK_RE = re.compile(r"https://skillberry-ai\.github\.io/cap-evolve/skillsbench/")
+
 LINK_RE = re.compile(
     r"https://github\.com/skillberry-ai/cap-evolve/(?:blob|tree)/"
     r"(parsec-history|spreadsheet-history|skillsbench-history|benchmark-history)/([^\"\s]+)"
@@ -57,7 +59,7 @@ def remap_link(m: re.Match) -> str:
     if branch == "spreadsheet-history":
         return f"{DASHBOARD}/spreadsheetbench/{html}"
     if branch == "skillsbench-history":
-        return f"{CAP_EVOLVE_SITE}/skillsbench/{html}"
+        return f"{DASHBOARD}/skillsbench/{html}"
     if branch == "benchmark-history" and path.startswith("docs/runs/") and path.endswith(".md"):
         return f"{DASHBOARD}/notes/runs/{html[len('docs/runs/'):]}"
     return m.group(0)
@@ -96,6 +98,7 @@ def main() -> int:
 
     for f in sorted((src / "records").glob("*.json")):
         text = LINK_RE.sub(remap_link, f.read_text(encoding="utf-8"))
+        text = SITE_LINK_RE.sub(f"{DASHBOARD}/skillsbench/", text)
         errs, warns = validate(f.name, text)
         if errs:
             bad.append((f.name, errs))

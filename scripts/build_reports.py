@@ -30,9 +30,9 @@ import shutil
 import sys
 from pathlib import Path
 
-import markdown as md_lib
 
-UNPUBLISHED_TOP = {".git", ".github", "artifacts", "recipes", "presentations"}
+# ci_ui/ (per-run "Open UI" data) is published by scripts/publish_ci_ui.py, not rendered here.
+UNPUBLISHED_TOP = {".git", ".github", "artifacts", "recipes", "presentations", "ci_ui"}
 SKIP_FILES = {".gitignore"}
 MD_EXTENSIONS = ["tables", "fenced_code", "toc", "attr_list", "sane_lists"]
 CAP_EVOLVE_SITE = "https://skillberry-ai.github.io/cap-evolve"
@@ -50,7 +50,7 @@ def section_nav(site: str) -> str:
 
 # (pattern, replacement) applied to published text. Order matters: paths before hosts.
 REDACTIONS = [
-    (re.compile(r"/(?:dccstor|proj|u)/[^\s`'\"<>)\]|,;]*"), "<internal path>"),
+    (re.compile(r"/(?:dccstor|proj|u)/[^\s`'\"<>)\]|,;\\]*"), "<internal path>"),
     (re.compile(r"\bccc[a-z]{1,3}\d{2,4}(?:\.[a-z0-9.-]+)?\b"), "<cluster host>"),
     (re.compile(r"[A-Za-z0-9._%+-]+@[a-z.]*ibm\.com\b"), "<email>"),
 ]
@@ -89,7 +89,7 @@ class Builder:
         resolved = posixpath.normpath(posixpath.join(cur_dir, path))
         if resolved.startswith("../") or resolved == "..":
             return None  # points outside the repo; leave as-is
-        if resolved == "README.md":  # the README is rendered as the section's index page
+        if resolved == self.front_page():  # the front page is rendered as the section's index
             return posixpath.relpath("index.html", cur_dir or ".")
         if is_published(resolved):
             return path[: -len(".md")] + ".html" if path.endswith(".md") else path
@@ -122,7 +122,7 @@ class Builder:
             q, path = m.group(1), m.group(2)
             for base in ("", cur_dir):
                 resolved = posixpath.normpath(posixpath.join(base, path))
-                if resolved == "README.md":
+                if resolved == self.front_page():
                     return f"{q}{posixpath.relpath('index.html', base or '.')}{q}"
                 if is_published(resolved) and (self.src / resolved).is_file():
                     return f"{q}{path[:-3]}.html{q}"
@@ -136,9 +136,9 @@ class Builder:
         site = "/".join([".."] * (depth + 1))  # dashboard site root
         hub = "/".join([".."] * depth) or "."
         src_link = (
-            f'<a class="ext-link" href="{self.gh_url(source_rel)}" title="{PRIVATE_TITLE}">source ↗ (private)</a>'
+            f'<a class="ext-link" href="{self.gh_url(source_rel)}" title="{PRIVATE_TITLE}">source (private)</a>'
             if source_rel and self.private else
-            f'<a class="ext-link" href="{self.gh_url(source_rel)}">source ↗</a>'
+            f'<a class="ext-link" href="{self.gh_url(source_rel)}">source</a>'
             if source_rel else ""
         )
         t = html_lib.escape(title)
@@ -162,7 +162,6 @@ class Builder:
     <div class="nav-links" id="nav-links">
       <a href="{site}/">Benchmark runs</a>
 {section_nav(site)}
-      <a href="{CAP_EVOLVE_SITE}/skillsbench/">SkillsBench</a>
       <a class="gh" href="https://github.com/{DASHBOARD_REPO}">GitHub</a>
     </div>
   </div>
@@ -182,19 +181,26 @@ class Builder:
     def render_md(self, rel: str) -> None:
         text, n = redact((self.src / rel).read_text(encoding="utf-8"))
         self.n_redacted += n
+        import markdown as md_lib  # imported here so publish_ci_ui.py can reuse redact() without it
+
         body = md_lib.markdown(text, extensions=MD_EXTENSIONS)
         body = self.rewrite_links(body, posixpath.dirname(rel))
-        out_rel = "index.html" if rel == "README.md" else rel[:-3] + ".html"
-        if rel == "README.md":
+        front = self.front_page()
+        out_rel = "index.html" if rel == front else rel[:-3] + ".html"
+        if rel == front == "README.md":
             body = self.report_list() + body
         title = rel.rsplit("/", 1)[-1][:-3]
-        page = self.chrome(self.title if rel == "README.md" else title, body, out_rel, rel)
+        page = self.chrome(self.title if rel == front else title, body, out_rel, rel)
         self.write(out_rel, page)
 
     def copy_html(self, rel: str) -> None:
         text, n = redact((self.src / rel).read_text(encoding="utf-8"))
         self.n_redacted += n
         self.write(rel, self.rewrite_links(text, posixpath.dirname(rel)))
+
+    def front_page(self) -> str:
+        """HOME.md is a hand-made front page (e.g. SkillsBench's experiment cards); else the README."""
+        return "HOME.md" if (self.src / "HOME.md").is_file() else "README.md"
 
     def report_list(self) -> str:
         pages = sorted(p for p in self.published if p.endswith(".html"))

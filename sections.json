@@ -1,4 +1,5 @@
 [
   {"repo": "parsec",           "title": "Parsec",           "legacy_branch": "parsec-history"},
-  {"repo": "spreadsheetbench", "title": "SpreadsheetBench", "legacy_branch": "spreadsheet-history"}
+  {"repo": "spreadsheetbench", "title": "SpreadsheetBench", "legacy_branch": "spreadsheet-history"},
+  {"repo": "skillsbench",      "title": "SkillsBench",      "legacy_branch": "skillsbench-history"}
 ]

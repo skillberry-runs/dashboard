@@ -27,7 +27,9 @@ cap-evolve's benchmark results, one repo per benchmark.
 **[PUBLISHING.md](PUBLISHING.md)** is the how-to: add a run row by hand, update a benchmark's write-ups,
 bring over runs from cap-evolve (the **Sync from cap-evolve** workflow), add a new benchmark, renew tokens,
 and troubleshoot. Tools: `scripts/check_records.py` (validates records; runs on pull requests and before
-every deploy), `scripts/sync_from_cap_evolve.py`, and `sections.json` (the list of benchmark sections).
+every deploy), `scripts/sync_from_cap_evolve.py`, `scripts/migrate_ui_snapshots.py` + `scripts/mask_secrets.py` (moving runs'
+"Open UI" data into the benchmark repos), `scripts/publish_ci_ui.py` + `site/viewer/` (serving it), and
+`sections.json` (the list of benchmark sections).
 
 ## Benchmark report sections
 

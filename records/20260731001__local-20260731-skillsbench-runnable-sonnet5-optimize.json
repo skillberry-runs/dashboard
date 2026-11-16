@@ -17,7 +17,7 @@
   "conclusion": "cancelled",
   "schema": 1,
   "summary_url": "https://skillberry-runs.github.io/dashboard/notes/runs/local-20260730-skillsbench-runnable-sonnet5-optimize.html",
-  "report_url": "https://skillberry-ai.github.io/cap-evolve/skillsbench/results/runnable-43task-opt/summary.html",
+  "report_url": "https://skillberry-runs.github.io/dashboard/skillsbench/results/runnable-43task-opt/summary.html",
   "tasks": [],
   "steps": [
     {

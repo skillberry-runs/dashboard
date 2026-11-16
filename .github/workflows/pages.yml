@@ -69,6 +69,7 @@ jobs:
           RESULTS_READ_TOKEN: ${{ secrets.RESULTS_READ_TOKEN }}
         run: |
           pip install --quiet markdown
+          rm -f site/ui_index.json   # rebuilt below from each repo's ci_ui/
           python3 -c "
           import json
           for x in json.load(open('sections.json')):
@@ -109,6 +110,8 @@ jobs:
             python3 scripts/build_reports.py --src "_src_$repo" --out "site/$repo" \
               --repo "skillberry-runs/$repo" --title "$title"
             test -f "site/$repo/index.html"
+            # Per-run "Open UI" data (ci_ui/), opened by the shared viewer in site/viewer/.
+            python3 scripts/publish_ci_ui.py --src "_src_$repo" --repo "$repo" --site site
           done 3< _sections.txt
 
       # Run notes for hand-published local runs (linked from records' summary_url).
