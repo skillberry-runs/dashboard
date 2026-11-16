@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import html as html_lib
+import json
 import posixpath
 import re
 import shutil
@@ -35,6 +36,15 @@ UNPUBLISHED_TOP = {".git", ".github", "artifacts", "recipes", "presentations"}
 SKIP_FILES = {".gitignore"}
 MD_EXTENSIONS = ["tables", "fenced_code", "toc", "attr_list", "sane_lists"]
 CAP_EVOLVE_SITE = "https://skillberry-ai.github.io/cap-evolve"
+SECTIONS_FILE = Path(__file__).resolve().parent.parent / "sections.json"
+
+
+def section_nav(site: str) -> str:
+    """Nav links for every published benchmark section, from sections.json."""
+    sections = json.loads(SECTIONS_FILE.read_text(encoding="utf-8")) if SECTIONS_FILE.exists() else []
+    return "\n".join(
+        f'      <a href="{site}/{s["repo"]}/">{html_lib.escape(s["title"])}</a>' for s in sections
+    )
 
 # (pattern, replacement) applied to published text. Order matters: paths before hosts.
 REDACTIONS = [
@@ -144,8 +154,7 @@ class Builder:
     <a class="nav-brand" href="{CAP_EVOLVE_SITE}/"><img src="{site}/assets/logo-300.png" alt="" class="nav-brand-logo" aria-hidden="true"><span class="wordmark">cap<span class="wordmark-dot">·</span>evolve</span></a>
     <div class="nav-links" id="nav-links">
       <a href="{site}/">Benchmark runs</a>
-      <a href="{site}/parsec/">Parsec</a>
-      <a href="{site}/spreadsheetbench/">SpreadsheetBench</a>
+{section_nav(site)}
       <a href="{CAP_EVOLVE_SITE}/skillsbench/">SkillsBench</a>
       <a class="gh" href="https://github.com/{self.repo}">GitHub</a>
     </div>

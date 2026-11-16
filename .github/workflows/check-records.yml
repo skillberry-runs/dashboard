@@ -1,0 +1,23 @@
+name: Check records
+
+# Validates records/*.json on pull requests, so a malformed run row is caught before it
+# is merged (the deploy runs the same check). See scripts/check_records.py.
+
+on:
+  pull_request:
+    paths:
+      - "records/**"
+      - "scripts/check_records.py"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 scripts/check_records.py

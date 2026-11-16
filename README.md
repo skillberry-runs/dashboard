@@ -17,9 +17,17 @@ cap-evolve's benchmark results, one repo per benchmark.
 - `scripts/record.py`: renders `benchmarks.json` + `meta.json` from `records/`. It's a copy of
   cap-evolve's `ci/benchmarks/lib/record.py`, and the record schema is owned there.
 - `.github/workflows/pages.yml`: renders the feed and deploys `site/` to Pages on every
-  push that touches the above.
+  push that touches the above. `sync-from-cap-evolve.yml` and `check-records.yml` are described in
+  [PUBLISHING.md](PUBLISHING.md).
 
 `benchmarks.json`/`meta.json` are **not committed**. They're regenerated on every deploy.
+
+## Publishing
+
+**[PUBLISHING.md](PUBLISHING.md)** is the how-to: add a run row by hand, update a benchmark's write-ups,
+bring over runs from cap-evolve (the **Sync from cap-evolve** workflow), add a new benchmark, renew tokens,
+and troubleshoot. Tools: `scripts/check_records.py` (validates records; runs on pull requests and before
+every deploy), `scripts/sync_from_cap_evolve.py`, and `sections.json` (the list of benchmark sections).
 
 ## Benchmark report sections
 

@@ -6,7 +6,7 @@ name: Deploy dashboard
 # it per run would rewrite an ever-growing file forever. records/<id>.json is the
 # source of truth (one small additive file per run).
 #
-# Also renders the parsec and spreadsheetbench report sections (see below).
+# Also renders a report section per benchmark listed in sections.json (see below).
 #
 # Triggers: a push to main that touches records/, site/, scripts/ or this file;
 # manual dispatch, which is also how an external writer (cap-evolve's CI, or a
@@ -17,8 +17,10 @@ on:
     branches: [main]
     paths:
       - "records/**"
+      - "notes/**"
       - "site/**"
       - "scripts/**"
+      - "sections.json"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -41,6 +43,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      # A malformed record would show a broken row, or "—" where a reward should be.
+      # Fail the deploy instead (the last good site stays live). See scripts/check_records.py.
+      - name: Validate records
+        run: python3 scripts/check_records.py
+
       - name: Render benchmarks.json + meta.json from records/
         run: |
           python3 scripts/record.py aggregate records \
@@ -52,7 +59,7 @@ jobs:
       # raw data/recipes/artifacts are not published, internal paths are masked).
       #
       # The repos are private, so cloning needs RESULTS_READ_TOKEN: a skillberry-bot
-      # fine-grained token with Contents: read on skillberry-runs/{parsec,spreadsheetbench}.
+      # fine-grained token with Contents: read on every repo listed in sections.json.
       # Transition fallback while that secret isn't set: read the identical legacy
       # orphan branches on the public skillberry-ai/cap-evolve repo instead. Once the
       # token is in place and those branches are deleted, the fallback just fails over
@@ -62,8 +69,26 @@ jobs:
           RESULTS_READ_TOKEN: ${{ secrets.RESULTS_READ_TOKEN }}
         run: |
           pip install --quiet markdown
-          for spec in "parsec|Parsec|parsec-history" "spreadsheetbench|SpreadsheetBench|spreadsheet-history"; do
-            IFS='|' read -r repo title legacy <<<"$spec"
+          python3 -c "
+          import json
+          for x in json.load(open('sections.json')):
+              print('|'.join([x['repo'], x['title'], x.get('legacy_branch', '')]))
+          " > _sections.txt
+          # Fine-grained tokens expire on a fixed date. Log it every deploy and warn 30 days
+          # ahead, so an expiry shows up as a warning first, not as a failed deploy.
+          if [ -n "$RESULTS_READ_TOKEN" ]; then
+            first=$(head -1 _sections.txt | cut -d'|' -f1)
+            exp=$(curl -sI -H "Authorization: Bearer $RESULTS_READ_TOKEN" "https://api.github.com/repos/skillberry-runs/$first" \
+              | tr -d '\r' | awk -F': ' 'tolower($1)=="github-authentication-token-expiration"{print $2}')
+            if [ -n "$exp" ]; then
+              days=$(python3 -c 'import sys,datetime as d; e=d.datetime.strptime(sys.argv[1][:19],"%Y-%m-%d %H:%M:%S"); print((e-d.datetime.utcnow()).days)' "$exp")
+              echo "RESULTS_READ_TOKEN expires $exp ($days days from now)"
+              if [ "$days" -lt 30 ]; then
+                echo "::warning::RESULTS_READ_TOKEN expires in $days days ($exp). Renew skillberry-bot's 'skillberry-runs-read' token and update this secret (and SKILLSBENCH_READ_TOKEN in skillberry-ai/cap-evolve, which uses the same token)."
+              fi
+            fi
+          fi
+          while IFS='|' read -r repo title legacy <&3; do
             rm -rf "_src_$repo"
             if [ -n "$RESULTS_READ_TOKEN" ]; then
               git clone --depth 1 \
@@ -84,7 +109,7 @@ jobs:
             python3 scripts/build_reports.py --src "_src_$repo" --out "site/$repo" \
               --repo "skillberry-runs/$repo" --title "$title"
             test -f "site/$repo/index.html"
-          done
+          done 3< _sections.txt
 
       # Run notes for hand-published local runs (linked from records' summary_url).
       - name: Render run notes
