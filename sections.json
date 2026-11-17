@@ -1,5 +1,8 @@
 [
-  {"repo": "parsec",           "title": "Parsec",           "legacy_branch": "parsec-history"},
-  {"repo": "spreadsheetbench", "title": "SpreadsheetBench", "legacy_branch": "spreadsheet-history"},
-  {"repo": "skillsbench",      "title": "SkillsBench",      "legacy_branch": "skillsbench-history"}
+  {"repo": "parsec", "title": "Parsec"},
+  {"repo": "spreadsheetbench", "title": "SpreadsheetBench"},
+  {"repo": "skillsbench", "title": "SkillsBench"},
+  {"repo": "tau", "title": "tau2", "benches": ["tau2", "tau2_custom_blackbox", "tau2_custom_direct", "tau2_custom_spa", "tau2_sierra", "tau2_sierra_blackbox", "tau2_blackbox", "skillberry_tau2_direct", "skillberry_tau2_spa"]},
+  {"repo": "swe", "title": "SWE-bench", "benches": ["swebench", "swebench-verified", "rh-swebench"], "skip_ui": {"manual__full-rh-swebench-v4__full-rh-swebench": "484 MB; secret scanner times out on it and flags Go source in its trajectories (OCI-token false positives). Left on cap-evolve's benchmark-history for now (2026-11-17)."}},
+  {"repo": "epic", "title": "Epic", "benches": ["epic-creator", "epic-decompose"]}
 ]

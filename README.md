@@ -33,17 +33,16 @@ every deploy), `scripts/sync_from_cap_evolve.py`, `scripts/migrate_ui_snapshots.
 
 ## Benchmark report sections
 
-`/parsec/` and `/spreadsheetbench/` publish the write-ups (`*.md`, rendered) and report pages
-(`ui/*.html`) of [`skillberry-runs/parsec`](https://github.com/skillberry-runs/parsec) and
-[`skillberry-runs/spreadsheetbench`](https://github.com/skillberry-runs/spreadsheetbench).
+Each benchmark listed in [`sections.json`](sections.json) gets a section, `/<repo>/`, publishing the
+write-ups (`*.md`, rendered) and report pages (`ui/*.html`) of `skillberry-runs/<repo>`, plus its runs'
+"Open UI" data (`ci_ui/`).
 `scripts/build_reports.py` renders them on every deploy. It does **not** publish raw results
-data, `recipes/`, `artifacts/` or `presentations/`; links to those go to the private repo on
+data, `recipes/`, `artifacts/` or `presentations/`; links to those open the files in the repo on
 GitHub. It also masks internal cluster paths and host names in what it does publish. `/notes/`
 renders `notes/`: hand-written notes for locally-run records, linked from their Source column.
 
-Those repos are private, so the deploy reads them with `RESULTS_READ_TOKEN`, a `skillberry-bot`
-fine-grained token with *Contents: read* on both. Until that secret is set, it falls back to the
-identical legacy branches on public `skillberry-ai/cap-evolve`.
+The benchmark repos are public (since 2026-11-17), so the deploy clones them without credentials.
+If `RESULTS_READ_TOKEN` is set it is used instead (needed only if a section's repo is ever private).
 
 ## Preview locally
 

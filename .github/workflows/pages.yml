@@ -58,12 +58,9 @@ jobs:
       # write-ups and report pages under site/<bench>/ (scripts/build_reports.py;
       # raw data/recipes/artifacts are not published, internal paths are masked).
       #
-      # The repos are private, so cloning needs RESULTS_READ_TOKEN: a skillberry-bot
-      # fine-grained token with Contents: read on every repo listed in sections.json.
-      # Transition fallback while that secret isn't set: read the identical legacy
-      # orphan branches on the public skillberry-ai/cap-evolve repo instead. Once the
-      # token is in place and those branches are deleted, the fallback just fails over
-      # to a loud error.
+      # The repos are public (since 2026-11-17), so they are cloned without credentials.
+      # If RESULTS_READ_TOKEN is set (a skillberry-bot fine-grained token, Contents: read),
+      # it is used instead; that only matters if a section's repo is ever made private.
       - name: Render benchmark report sections
         env:
           RESULTS_READ_TOKEN: ${{ secrets.RESULTS_READ_TOKEN }}
@@ -73,7 +70,7 @@ jobs:
           python3 -c "
           import json
           for x in json.load(open('sections.json')):
-              print('|'.join([x['repo'], x['title'], x.get('legacy_branch', '')]))
+              print('|'.join([x['repo'], x['title']]))
           " > _sections.txt
           # Fine-grained tokens expire on a fixed date. Log it every deploy and warn 30 days
           # ahead, so an expiry shows up as a warning first, not as a failed deploy.
@@ -89,24 +86,21 @@ jobs:
               fi
             fi
           fi
-          while IFS='|' read -r repo title legacy <&3; do
+          while IFS='|' read -r repo title <&3; do
             rm -rf "_src_$repo"
             if [ -n "$RESULTS_READ_TOKEN" ]; then
-              git clone --depth 1 \
-                "https://x-access-token:${RESULTS_READ_TOKEN}@github.com/skillberry-runs/$repo.git" "_src_$repo" || {
-                  # Say WHY: who the token is, and GitHub's own reason for refusing it.
-                  api() { curl -s -H "Authorization: Bearer $RESULTS_READ_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/$1"; }
-                  echo "token owner: $(api user | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("login") or d.get("message"))')"
-                  echo "repo check:  $(api repos/skillberry-runs/$repo | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("full_name") or d.get("message"))')"
-                  curl -s -o /dev/null -D - -H "Authorization: Bearer $RESULTS_READ_TOKEN" "https://api.github.com/repos/skillberry-runs/$repo" \
-                    | grep -iE '^(x-accepted-github-permissions|github-authentication-token-expiration|x-github-sso):' || true
-                  echo "::error::RESULTS_READ_TOKEN is set but cloning skillberry-runs/$repo failed (expired, under-scoped, or blocked by org token policy?)"; exit 1; }
+              url="https://x-access-token:${RESULTS_READ_TOKEN}@github.com/skillberry-runs/$repo.git"
             else
-              echo "::warning::RESULTS_READ_TOKEN not set; rendering $title from the legacy cap-evolve $legacy branch"
-              git clone --depth 1 --branch "$legacy" \
-                "https://github.com/skillberry-ai/cap-evolve.git" "_src_$repo" || {
-                  echo "::error::no source reachable for $title (no token, legacy branch gone)"; exit 1; }
+              url="https://github.com/skillberry-runs/$repo.git"
             fi
+            git clone --depth 1 "$url" "_src_$repo" || {
+              if [ -n "$RESULTS_READ_TOKEN" ]; then
+                # Say WHY: who the token is, and GitHub's own reason for refusing it.
+                api() { curl -s -H "Authorization: Bearer $RESULTS_READ_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/$1"; }
+                echo "token owner: $(api user | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("login") or d.get("message"))')"
+                echo "repo check:  $(api repos/skillberry-runs/$repo | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("full_name") or d.get("message"))')"
+              fi
+              echo "::error::cloning skillberry-runs/$repo failed (repo missing or private? token expired?)"; exit 1; }
             python3 scripts/build_reports.py --src "_src_$repo" --out "site/$repo" \
               --repo "skillberry-runs/$repo" --title "$title"
             test -f "site/$repo/index.html"

@@ -76,7 +76,7 @@ class Builder:
         self.src, self.out, self.repo, self.title, self.ref = src, out, repo, title, ref
         self.n_redacted = 0
         self.src_prefix = ""
-        self.private = True  # the results repos are private; --source-public for this (public) repo
+        self.private = False  # the results repos are public (2026-11-17); --source-private labels links
 
     # ---- links -------------------------------------------------------------
     def gh_url(self, rel: str) -> str:
@@ -215,10 +215,9 @@ class Builder:
             '<div class="callout callout-accent"><p class="callout-title">Report pages</p>'
             f'<ul>{"".join(items)}</ul>'
             "<p class=\"muted\" style=\"font-size:0.88rem\">Raw results data, recipes, artifacts and "
-            "presentations are not published here; links to them go to the source repo on GitHub "
-            "(private: only <code>skillberry-runs</code> org members can open them; anyone else gets a 404, "
-            "which means no access, not a broken link). Internal cluster paths and host names are masked "
-            "on this site.</p></div>\n"
+            "presentations are not rendered on this site; links to them open the files in the "
+            f'<a href="https://github.com/{self.repo}">source repo</a> on GitHub. Internal cluster paths '
+            "and host names are masked on this site.</p></div>\n"
         )
 
     def write(self, rel_out: str, text: str) -> None:
@@ -256,12 +255,14 @@ def main() -> int:
     ap.add_argument("--title", required=True, help="display name, e.g. Parsec")
     ap.add_argument("--ref", default="main")
     ap.add_argument("--src-prefix", default="", help="path of --src inside --repo (for source links)")
-    ap.add_argument("--source-public", action="store_true",
-                    help="--repo is public: no '(private)' labels on its links (e.g. notes/ in this repo)")
+    vis = ap.add_mutually_exclusive_group()
+    vis.add_argument("--source-private", action="store_true",
+                     help="--repo is private: label links into it '(private)' (org members only)")
+    vis.add_argument("--source-public", action="store_true", help="--repo is public (the default)")
     a = ap.parse_args()
     b = Builder(a.src, a.out, a.repo, a.title, a.ref)
     b.src_prefix = a.src_prefix.strip("/")
-    b.private = not a.source_public
+    b.private = a.source_private
     stats = b.build()
     print(f"{a.title}: rendered {stats['md']} .md, copied {stats['html']} .html, masked {stats['redactions']} internal paths/hosts")
     return 0 if (a.out / "index.html").exists() else 1

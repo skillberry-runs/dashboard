@@ -10,10 +10,10 @@ brings those runs over. Making CI write here directly is a later step.)
 |---|---|---|
 | **Run rows** (the table) | `records/<id>__<label>.json` in **this repo** | yes: every row |
 | **Short notes** for hand-published runs | `notes/runs/<name>.md` in this repo | yes: `/notes/runs/<name>.html` |
-| **Write-ups and report pages** per benchmark | the benchmark's repo: `skillberry-runs/parsec`, `/spreadsheetbench`, `/skillsbench` (private) | `*.md` and `ui/*.html` only, at `/<benchmark>/…` |
+| **Write-ups and report pages** per benchmark | the benchmark's repo, `skillberry-runs/<repo>` (public; the list is [`sections.json`](sections.json)) | `*.md` and `ui/*.html` only, at `/<benchmark>/…` |
 | Raw data, `recipes/`, `artifacts/`, `presentations/` | the benchmark's repo | **no**: never published (they contain internal paths) |
 | **"Open UI" data** per run | the benchmark's repo: `ci_ui/<run_id>__<tier>-<bench>/` | yes: `/<benchmark>/ci_ui/…`, opened in the shared viewer (`site/viewer/`) |
-| "Open UI" data of benchmarks without a repo yet (tau2, SWE-bench, …), "Watch live" data | cap-evolve's `benchmark-history` branch | served by cap-evolve's site |
+| "Open UI" data of runs not yet moved (see F), "Watch live" data | cap-evolve's `benchmark-history` branch | served by cap-evolve's site |
 
 ## Which section do I need?
 
@@ -41,7 +41,7 @@ CI uses the Actions run id as the id; hand-published runs use `YYYYMMDDNNN` (for
 name replaces that record, which is how you correct one.
 
 **3. Link a write-up** (optional). Put `summary_url` and/or `report_url` in the record, pointing at the
-*published* page, not at a private repo (see B and C for the URL form). `source` should say how the run
+*published* page rather than at a file in a repo (see B and C for the URL form). `source` should say how the run
 was produced and published; do not present a hand-finished run as a clean CI run.
 
 **4. Add it with a pull request:**
@@ -85,8 +85,7 @@ gh workflow run pages.yml -R skillberry-runs/dashboard
 A page's address is its path with `.md` → `.html`: `results/v6/v6_t4_e1/summary.md` in `parsec` is
 <https://skillberry-runs.github.io/dashboard/parsec/results/v6/v6_t4_e1/summary.html>.
 Links *from* one published page to another are rewritten for you. Links to files that are not
-published (`artifacts/…`, raw JSON) are sent to the private repo on GitHub, so they open for org
-members only.
+rendered (`artifacts/…`, raw JSON) open the file in the repo on GitHub.
 
 A section's front page is its `HOME.md` if the repo has one (SkillsBench does: the experiment cards),
 otherwise its `README.md`.
@@ -133,22 +132,19 @@ that fails validation is skipped and the run fails, so it cannot go unnoticed.
 
 ## E. Publish a new benchmark (for example AppWorld)
 
-1. **Create the repo** `skillberry-runs/<benchmark>` (private). Put a `README.md` (it becomes the front
-   page), write-ups as `*.md`, and report pages as `ui/*.html`. Only `.md` and `.html` files are
-   published; raw data (JSON and so on) never is, and nothing under `artifacts/`, `recipes/` or
-   `presentations/` is, so put anything that carries internal paths there.
-2. **Let the deploy read it.** In skillberry-bot's token list
-   (<https://github.com/settings/personal-access-tokens>, logged in as the bot), edit
-   `skillberry-runs-read` and add the new repo under *Repository access*. Editing does not change the
-   token's value, so no secret needs updating.
-3. **Register the section.** Add an entry to [`sections.json`](sections.json):
+1. **Create the repo** `skillberry-runs/<benchmark>`, **public** (everything in the org is public, and the
+   deploy clones without credentials). Put a `README.md` (it becomes the front page; or a `HOME.md`),
+   write-ups as `*.md`, and report pages as `ui/*.html`. Only `.md` and `.html` files are rendered on the
+   site; raw data (JSON and so on) and anything under `artifacts/`, `recipes/` or `presentations/` are
+   not, but they are still readable in the public repo, so keep secrets and internal-only material out
+   of the repo altogether (the secret scanner checks every commit).
+2. **Register the section.** Add an entry to [`sections.json`](sections.json):
    `{"repo": "<benchmark>", "title": "<Display name>", "benches": ["<bench>", …]}`. `benches` lists the
    `bench` values of the records whose "Open UI" data belongs in this repo (default: the repo name; a
-   `tau2` repo would list `tau2`, `tau2_sierra`, `tau2_custom_direct`, …). `legacy_branch` is only for
-   the old cap-evolve branches. Add a link next to the others in `site/index.html`'s menu; the menu on
+   `tau` repo lists `tau2`, `tau2_sierra`, `tau2_custom_direct`, …). Add a link next to the others in `site/index.html`'s menu; the menu on
    the section pages follows `sections.json` by itself.
-4. **Move its runs' "Open UI" data** into the repo (F).
-5. **Deploy** (B) and open `/<benchmark>/`. Add its run rows with A.
+3. **Move its runs' "Open UI" data** into the repo (F).
+4. **Deploy** (B) and open `/<benchmark>/`. Add its run rows with A.
 
 ## F. "Open UI" data (`ci_ui/`) and the shared viewer
 
@@ -198,9 +194,9 @@ commit `site/viewer/`. Newer viewers open older runs' data (tested back to July 
 
 | Secret | Lives in | Used for |
 |---|---|---|
-| `RESULTS_READ_TOKEN` | this repo | the deploy reads the private benchmark repos |
-| `SKILLSBENCH_READ_TOKEN` | cap-evolve | cap-evolve's deploy reads `skillsbench` (same token as above) |
-| `CAP_EVOLVE_DISPATCH_TOKEN` | `skillberry-runs/skillsbench` | starts cap-evolve's deploy when `skillsbench` changes |
+| `RESULTS_READ_TOKEN` | this repo | optional since the repos went public: if set, the deploy clones with it |
+| `SKILLSBENCH_READ_TOKEN` | cap-evolve | cap-evolve's deploy reads `skillsbench` (same token as above; retired once cap-evolve drops its SkillsBench section) |
+| `CAP_EVOLVE_DISPATCH_TOKEN` | `skillberry-runs/skillsbench` | starts cap-evolve's deploy when `skillsbench` changes (same: retired with that section) |
 
 All three are fine-grained tokens of the bot account `skillberry-bot` and **expire on a fixed date**
 (set to one year). Every deploy logs the expiry of `RESULTS_READ_TOKEN` and warns 30 days ahead. To renew:
@@ -214,7 +210,7 @@ token is used (`gh secret set RESULTS_READ_TOKEN -R skillberry-runs/dashboard`, 
 |---|---|
 | A new row is not on the page | The filters. **Result** defaults to *success* (failed and cancelled runs are hidden) and **Time** to *All*. Also check that the deploy finished (Actions tab). |
 | A row shows `—` for reward | `conclusion` is not `success`, or `suite` is empty because `record.py build` ran on an unfinished run. `check_records.py` warns about this. |
-| Deploy is red with `403` in the report step | `RESULTS_READ_TOKEN` expired, lacks *Contents: read* on a repo, or the repo is missing from its list. The log prints the token's owner and GitHub's stated reason. The last good site stays live. |
+| Deploy is red when cloning a section's repo | The repo in `sections.json` doesn't exist or isn't public, or `RESULTS_READ_TOKEN` is set but expired (delete the secret: public repos don't need it). The log prints the token's owner and GitHub's reason. The last good site stays live. |
 | Deploy is red at "Validate records" | A record failed `scripts/check_records.py`; the error names the file and the problem. |
-| A link opens a 404 for someone outside the org | It points into a private repo (the site labels these "(private)"). In a record, link the published page instead (B). |
+| A link opens a 404 | A record or page links to a file that was renamed or never committed (GitHub Pages is case-sensitive: check the file name's letter case). |
 | Sync run is red | A source record failed validation (listed as `REJECTED` in the log). Fix it at the source, or copy it by hand through A. |

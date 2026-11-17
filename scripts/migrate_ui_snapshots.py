@@ -58,6 +58,8 @@ def main() -> int:
 
     sections = json.loads((ROOT / "sections.json").read_text())
     owner = {b: s["repo"] for s in sections for b in s.get("benches", [s["repo"]])}
+    # runs deliberately left on cap-evolve, with the reason (sections.json "skip_ui": {slug: reason})
+    skip = {slug: why for s in sections for slug, why in s.get("skip_ui", {}).items()}
 
     want: dict[str, list[str]] = collections.defaultdict(list)   # repo -> slugs to copy
     no_repo: collections.Counter = collections.Counter()
@@ -68,6 +70,9 @@ def main() -> int:
         repo = owner.get(r["bench"])
         if repo is None:
             no_repo[r["bench"]] += 1
+            continue
+        if slug_of(r) in skip:
+            print(f"skipping {slug_of(r)}: {skip[slug_of(r)]}")
             continue
         if not (a.repos_dir / repo / "ci_ui" / slug_of(r)).exists():
             want[repo].append(slug_of(r))
