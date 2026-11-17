@@ -8,7 +8,7 @@ name: Deploy dashboard
 #
 # Also renders a report section per benchmark listed in sections.json (see below).
 #
-# Triggers: a push to main that touches records/, site/, scripts/ or this file;
+# Triggers: a push to main that touches records/, site/, scripts/ or this file; nightly;
 # manual dispatch, which is also how an external writer (cap-evolve's CI, or a
 # results repo's notify workflow, running as skillberry-bot) requests a redeploy.
 
@@ -23,6 +23,10 @@ on:
       - "sections.json"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
+  # Nightly rebuild, so changes pushed to the benchmark repos (write-ups, ci_ui/) show up
+  # without anyone running this by hand. The repos are public: no token needed.
+  schedule:
+    - cron: "17 3 * * *"
 
 permissions:
   contents: read

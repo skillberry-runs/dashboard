@@ -75,8 +75,8 @@ What gets published on the site:
 Internal cluster paths and host names in published text are replaced by `<internal path>` /
 `<cluster host>`. The repo itself is not changed.
 
-**The site does not update on its own when these repos change yet.** After pushing, run
-**Actions → Deploy dashboard → Run workflow** in this repo, or:
+**The site rebuilds nightly** (03:17 UTC), so pushes to these repos show up by the next morning. To see
+them sooner, run **Actions → Deploy dashboard → Run workflow** in this repo, or:
 
 ```bash
 gh workflow run pages.yml -R skillberry-runs/dashboard
