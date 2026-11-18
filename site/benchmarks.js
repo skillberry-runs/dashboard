@@ -1,25 +1,14 @@
-// Standalone copy of cap-evolve's site/benchmarks.js, hosted at skillberry-runs/dashboard.
-// "Open UI" opens this site's shared viewer for runs whose data it hosts (see UI_INDEX).
-// The feed (benchmarks.json/meta.json) is rendered from THIS repo's records/ by
-// .github/workflows/pages.yml. Things this repo does not host are linked on cap-evolve:
-// the per-run CapEvolve UI snapshots (benchmark-history's runs/**, ~3 GB) and the live
-// viewer (dashboard-ui), and the in-progress run data still comes from cap-evolve's
-// benchmark-history live/ and Actions API, because cap-evolve's CI is still the writer.
-const CAP_EVOLVE_SITE = "https://skillberry-ai.github.io/cap-evolve";
+// The benchmark-runs page of skillberry-runs/dashboard (it started as a copy of cap-evolve's
+// site/benchmarks.js, 2026-11). The feed (benchmarks.json/meta.json) is rendered from this repo's
+// records/ by .github/workflows/pages.yml. cap-evolve's CI writes the records, and each run's
+// "Open UI" data into its benchmark repo's ci_ui/, which "Open UI" opens in this site's shared
+// viewer (see UI_INDEX). "Running now" reads cap-evolve's Actions API, since that is where runs
+// execute.
+//
 // Live ("Watch live") data of a running CI job: one branch per job, <run_id>__<tier>-<bench>, in
-// skillberry-runs/live (see that repo's README). LEGACY_LIVE is where cap-evolve's CI wrote it before
-// 2026-11 (live/<slug>/ on its benchmark-history branch); used only for a job whose branch does not
-// exist, and removable once that branch is gone.
+// skillberry-runs/live (see that repo's README), deleted when the job ends.
 const LIVE_RAW = "https://raw.githubusercontent.com/skillberry-runs/live";
-const LEGACY_LIVE = "https://raw.githubusercontent.com/skillberry-ai/cap-evolve/benchmark-history/live";
-async function liveDataBase(slug) {
-  const fresh = `${LIVE_RAW}/${slug}/data`;
-  try {
-    const r = await fetch(`${fresh}/runs.json`, { method: "HEAD", cache: "no-store" });
-    if (r.ok) return fresh;
-  } catch (e) { /* fall through */ }
-  return `${LEGACY_LIVE}/${slug}/data`;
-}
+const liveDataBase = (slug) => `${LIVE_RAW}/${slug}/data`;
 const GH_API = "https://api.github.com/repos/skillberry-ai/cap-evolve";
 // Tier is matched GENERICALLY: the workflow's TIERS list grows (smoke, pilot, full,
 // full_verified, …) and hardcoding it here silently hides new tiers from the live panel — a
@@ -31,7 +20,7 @@ const GH_API = "https://api.github.com/repos/skillberry-ai/cap-evolve";
 // silently hid the two tau2-airline arms from this panel entirely.
 const JOB_RE = /^([a-z][a-z0-9_-]*) \/ ([a-z][a-z0-9_-]*)$/;
 // The arms are internal leg names; the picker calls them tau2-sierra + intervention. The retired
-// tau2_custom_* names stay so their rows already in benchmark-history keep a readable label.
+// tau2_custom_* names stay so older rows keep a readable label.
 const BENCH_LABEL = {
   tau2_sierra: "tau2-sierra (direct)",
   tau2_sierra_blackbox: "tau2-sierra (blackbox)",
@@ -43,24 +32,23 @@ const benchLabel = (b) => BENCH_LABEL[b] || b;
 // site/benchmarks.fixture.json). Local-only affordance for exercising the filter cascade
 // through many reload cycles; the default path is unchanged.
 //
-// benchmarks.json/meta.json are same-origin: pages.yml renders them fresh from
-// benchmark-history's records/ on every deploy, they're never committed to that branch
-// (an ever-growing aggregate rewritten in full on every run — see pages.yml for why).
+// benchmarks.json/meta.json are same-origin: pages.yml renders them fresh from this repo's
+// records/ on every deploy; they're never committed (an ever-growing aggregate rewritten in
+// full on every run).
 // LIVE_RAW (above) serves in-progress run data, which a once-per-run deploy can't.
 const FEED = new URLSearchParams(location.search).has("fixture")
   ? "benchmarks.fixture.json" : "benchmarks.json";
 let RECORDS = [], sortKey = "date", sortDir = -1;
 // ui_index.json (written by scripts/publish_ci_ui.py at deploy): which runs' "Open UI" data this
 // site hosts, as {"<run_id>__<tier>-<bench>": "<bench repo>/ci_ui/<slug>"}. Those open in the shared
-// viewer (viewer/); every other run still opens its snapshot on cap-evolve's site.
+// viewer (viewer/). A has_ui run that is not listed has no data on this site (a run deliberately not
+// moved, sections.json "skip_ui"): openUiHref returns null and the row says so instead of linking.
 let UI_INDEX = {};
 function openUiHref(r) {
   const slug = `${r.run_id}__${r.tier || "smoke"}-${r.bench}`;
-  if (UI_INDEX[slug]) {
-    const data = new URL(UI_INDEX[slug], location.href).href;
-    return `viewer/index.html?dataBase=${encodeURIComponent(data)}#/runs/run_suite`;
-  }
-  return `${CAP_EVOLVE_SITE}/benchmark-ui/runs/${encodeURIComponent(r.run_id)}__${encodeURIComponent(r.tier || "smoke")}-${encodeURIComponent(r.bench)}/ui/index.html#/runs/run_suite`;
+  if (!UI_INDEX[slug]) return null;
+  const data = new URL(UI_INDEX[slug], location.href).href;
+  return `viewer/index.html?dataBase=${encodeURIComponent(data)}#/runs/run_suite`;
 }
 
 const $ = (s) => document.querySelector(s);
@@ -329,7 +317,10 @@ function render() {
     // additive alongside `has_ui`'s CapEvolve UI snapshot link, not a replacement.
     const uiParts = [];
     if (r.has_ui) {
-      uiParts.push(`<a href="${esc(openUiHref(r))}" target="_blank" rel="noopener">Open UI</a>`);
+      const href = openUiHref(r);
+      uiParts.push(href
+        ? `<a href="${esc(href)}" target="_blank" rel="noopener">Open UI</a>`
+        : `<span class="muted" title="This run's UI data is not hosted on this site; it is in the archive of cap-evolve's benchmark-history branch">UI archived</span>`);
     }
     if (r.report_url) {
       uiParts.push(`<a href="${esc(r.report_url)}" target="_blank" rel="noopener">Report ↗</a>`);

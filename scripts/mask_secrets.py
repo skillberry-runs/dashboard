@@ -16,8 +16,8 @@ override, so the matching text is replaced with a visible placeholder instead:
 
 Tool-call ids are mapped deterministically (same id -> same stand-in, in every file), so the
 viewer still pairs each tool call with its result. Replacements never contain quotes or
-backslashes, and every .json file must still parse afterwards, or this exits 1. Originals
-remain on cap-evolve's benchmark-history branch.
+backslashes, and every .json file must still parse afterwards, or this exits 1. cap-evolve's CI
+runs this on every run's Open UI data before publishing it (ci/benchmarks/lib/publish_results.sh).
 
 --findings takes the scanner's text output (the "error: <file>:<line>:<col>: detected <kind>"
 lines of a blocked commit) and masks the value at each reported position. Run the commit again

@@ -17,19 +17,22 @@ cap-evolve's benchmark results, one repo per benchmark.
 - `scripts/record.py`: renders `benchmarks.json` + `meta.json` from `records/`. It's a copy of
   cap-evolve's `ci/benchmarks/lib/record.py`, and the record schema is owned there.
 - `.github/workflows/pages.yml`: renders the feed and deploys `site/` to Pages on every
-  push that touches the above. `sync-from-cap-evolve.yml` and `check-records.yml` are described in
-  [PUBLISHING.md](PUBLISHING.md).
+  push that touches the above, and nightly (to pick up the benchmark repos' write-ups).
+  `check-records.yml` validates records on pull requests; `check-site.yml` checks the page against
+  cap-evolve's tiers and benches.
 
 `benchmarks.json`/`meta.json` are **not committed**. They're regenerated on every deploy.
 
 ## Publishing
 
 **[PUBLISHING.md](PUBLISHING.md)** is the how-to: add a run row by hand, update a benchmark's write-ups,
-bring over runs from cap-evolve (the **Sync from cap-evolve** workflow), add a new benchmark, renew tokens,
-and troubleshoot. Tools: `scripts/check_records.py` (validates records; runs on pull requests and before
-every deploy), `scripts/sync_from_cap_evolve.py`, `scripts/migrate_ui_snapshots.py` + `scripts/mask_secrets.py` (moving runs'
-"Open UI" data into the benchmark repos), `scripts/publish_ci_ui.py` + `site/viewer/` (serving it), and
-`sections.json` (the list of benchmark sections).
+add a new benchmark, renew tokens, and troubleshoot. Tools: `scripts/check_records.py` (validates records;
+runs on pull requests and before every deploy), `scripts/mask_secrets.py` (secret-scanner false positives in
+run data; cap-evolve's CI runs it too), `scripts/publish_ci_ui.py` + `site/viewer/` (serving runs' "Open
+UI" data), and `sections.json` (the list of benchmark sections, and which repo holds which bench).
+
+New runs arrive by themselves: cap-evolve's CI publishes each one here (its record) and to its
+benchmark's repo (its "Open UI" data), as `skillberry-bot`.
 
 ## Benchmark report sections
 
@@ -52,17 +55,13 @@ python3 -m http.server -d site 8000   # open http://localhost:8000/
 # or http://localhost:8000/?fixture to use the small committed sample feed
 ```
 
-## Provenance and current limits
+## Provenance
 
 This repo was created on 2026-11-10 as a fresh snapshot of cap-evolve's `benchmark-history`
-branch (records only, at `0875ae5`) plus the page from cap-evolve's `site/` (at `4e93f41`).
-The branch's git history (~2,700 commits) and its large per-run artifacts were deliberately
-**not** copied:
-
-- **"Open UI" links** go to the per-run CapEvolve UI snapshots, which are still served from the
-  cap-evolve site (`benchmark-history`'s `runs/**`, ~3 GB).
-- **"Running now" / "Watch live"** still read cap-evolve's Actions API and `benchmark-history`'s
-  `live/`, because cap-evolve's CI is still where runs execute.
-- **New runs are not here yet.** cap-evolve's CI still writes new records to its own
-  `benchmark-history` branch. Until it's pointed at this repo (planned; it will run as
-  `skillberry-bot`), this dashboard is a snapshot as of the date above.
+branch (records only, at `0875ae5`) plus the page from cap-evolve's `site/` (at `4e93f41`). The
+branch's git history (~2,700 commits) and its large per-run artifacts were deliberately **not**
+copied. Its per-run "Open UI" data was moved into the benchmark repos' `ci_ui/` folders
+(2026-11-16/17), and since 2026-11-18 cap-evolve's CI writes here directly (cap-evolve#993), with
+"Watch live" data in [`skillberry-runs/live`](https://github.com/skillberry-runs/live).
+"Running now" still reads cap-evolve's Actions API, since that's where runs execute (unauthenticated:
+60 requests an hour per IP address, which a shared office network can use up).

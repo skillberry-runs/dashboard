@@ -1,8 +1,9 @@
 # Publishing to the dashboard
 
-How new benchmark results get onto <https://skillberry-runs.github.io/dashboard/>, by hand.
-(cap-evolve's CI still publishes to cap-evolve's own `benchmark-history` branch; section D
-brings those runs over. Making CI write here directly is a later step.)
+How benchmark results get onto <https://skillberry-runs.github.io/dashboard/>. cap-evolve's CI
+publishes every run here by itself (each bench job's `Publish results to skillberry-runs` step: the row,
+and the run's "Open UI" data in its benchmark's repo). This document is for everything else: runs
+published by hand, write-ups, new benchmarks, tokens.
 
 ## What lives where
 
@@ -13,7 +14,7 @@ brings those runs over. Making CI write here directly is a later step.)
 | **Write-ups and report pages** per benchmark | the benchmark's repo, `skillberry-runs/<repo>` (public; the list is [`sections.json`](sections.json)) | `*.md` and `ui/*.html` only, at `/<benchmark>/…` |
 | Raw data, `recipes/`, `artifacts/`, `presentations/` | the benchmark's repo | **no**: never published (they contain internal paths) |
 | **"Open UI" data** per run | the benchmark's repo: `ci_ui/<run_id>__<tier>-<bench>/` | yes: `/<benchmark>/ci_ui/…`, opened in the shared viewer (`site/viewer/`) |
-| "Open UI" data of runs not yet moved (see F), "Watch live" data | cap-evolve's `benchmark-history` branch | served by cap-evolve's site |
+| "Watch live" data of a running CI job | [`skillberry-runs/live`](https://github.com/skillberry-runs/live), one branch per job, deleted when it ends | read live by the page |
 
 ## Which section do I need?
 
@@ -22,7 +23,6 @@ brings those runs over. Making CI write here directly is a later step.)
 | add a run to the table (a run that did not go through cap-evolve's CI) | **A** |
 | add or update a write-up, heatmap or report page | **B** |
 | attach a short note to a hand-published row | **C** |
-| bring over runs that cap-evolve's CI recorded on `benchmark-history` | **D** |
 | publish a benchmark that has no section yet (e.g. AppWorld) | **E** |
 | add or move a run's "Open UI" data | **F** |
 
@@ -40,10 +40,9 @@ CI uses the Actions run id as the id; hand-published runs use `YYYYMMDDNNN` (for
 `20261019001__v6-parsec.json`). The name is the record's identity: adding a file with an existing
 name replaces that record, which is how you correct one.
 
-**One run, one file.** The file name is a record's identity here, and the sync (D) compares by name
-only. If the run is also on cap-evolve's `benchmark-history` (CI wrote it, or it was published there),
-don't add it here under a different name: let D bring it over, or use that same file name. Otherwise the
-run shows up as two rows.
+**One run, one file.** The file name is a record's identity. If CI already published the run (a CI run
+you are correcting, for example), reuse its file name rather than adding a second one; otherwise the run
+shows up as two rows.
 
 **3. Link a write-up** (optional). Put `summary_url` and/or `report_url` in the record, pointing at the
 *published* page rather than at a file in a repo (see B and C for the URL form). `source` should say how the run
@@ -96,9 +95,8 @@ rendered (`artifacts/…`, raw JSON) open the file in the repo on GitHub.
 A section's front page is its `HOME.md` if the repo has one (SkillsBench does: the experiment cards),
 otherwise its `README.md`.
 
-SkillsBench's section moved here from cap-evolve's site on 2026-11-16. Until cap-evolve drops its copy,
-pushing to `skillberry-runs/skillsbench` still rebuilds cap-evolve's site too (its
-`notify-cap-evolve-pages.yml`); this site needs the manual deploy above, like the others.
+SkillsBench's section moved here from cap-evolve's site on 2026-11-16 (cap-evolve's old addresses
+redirect here).
 
 ## C. A short note for a hand-published row
 
@@ -107,37 +105,13 @@ A) and set the record's `summary_url` to
 `https://skillberry-runs.github.io/dashboard/notes/runs/<name>.html`. Longer material belongs in the
 benchmark's repo (B).
 
-## D. Bring over runs from cap-evolve
+## D. Runs from cap-evolve's `benchmark-history` (retired)
 
-Runs that cap-evolve's CI records on its `benchmark-history` branch, or that someone published there by
-hand, are copied here by the **Sync from cap-evolve** workflow. Run it whenever you want them on the
-dashboard; it is safe to repeat.
-
-**Actions → Sync from cap-evolve → Run workflow**, or:
-
-```bash
-gh workflow run sync-from-cap-evolve.yml -R skillberry-runs/dashboard                    # copy what is new
-gh workflow run sync-from-cap-evolve.yml -R skillberry-runs/dashboard -f dry_run=true    # report only
-gh run list -R skillberry-runs/dashboard --workflow sync-from-cap-evolve.yml --limit 1   # then: gh run view <id> --log
-```
-
-The report (what was added, what already matched, what was rejected) is also on the run's summary page.
-
-It copies `records/*.json` and `docs/runs/*.md` that are not here yet (nothing else: the branch's
-per-run UI snapshots and live data are not fetched), repoints links that still name cap-evolve's retired
-`*-history` branches, validates each record, commits as `skillberry-bot`, and starts a deploy. A record
-that fails validation is skipped and the run fails, so it cannot go unnoticed.
-
-- **Fix a record in one place only.** For a run that exists both here and on `benchmark-history`, fix
-  it on `benchmark-history` and sync with `-f update_existing=true`. A fix made only here gets overwritten
-  by the next `update_existing` sync.
-- `-f update_existing=true` also overwrites a record that already exists here but differs from
-  cap-evolve's copy (use it after correcting a record at the source). By default such a record is kept
-  and listed.
-- Without GitHub: `python3 scripts/sync_from_cap_evolve.py --dry-run`, then run it without `--dry-run`
-  and commit.
-- **"Open UI" links** in copied rows open cap-evolve's copy of the snapshot until that run's data is
-  moved into its benchmark repo (F); then they open this site's shared viewer.
+Until 2026-11-18 cap-evolve's CI published to its own `benchmark-history` branch, and a sync workflow
+copied those runs here. Everything on that branch was migrated (211 records, their notes and their
+"Open UI" data; one run's data deliberately not, see `skip_ui` in `sections.json`), CI now publishes here
+directly, and the sync workflow and migration scripts were removed (they are in this repo's git history).
+The branch is being backed up to Box, and will be deleted after that.
 
 ## E. Publish a new benchmark (for example AppWorld)
 
@@ -180,8 +154,6 @@ publish step.
    [`check-site.yml`](.github/workflows/check-site.yml) confirms the "Running now" panel recognises it.
 5. **Publish runs.** From here CI publishes every run of it automatically (its row here, its "Open UI"
    data in the repo). To publish by hand: the row with A, its "Open UI" data with F, write-ups with B.
-   Runs that are already on cap-evolve's `benchmark-history` come over with D, then
-   `scripts/migrate_ui_snapshots.py` (F).
 6. **Deploy and check** (B): open `/<benchmark>/` (once it has a section) and the run's row, and its
    **Open UI** link.
 
@@ -196,30 +168,21 @@ one folder per run, named exactly like the run's row:
 
 The **viewer** is one shared copy in this repo, `site/viewer/`. At deploy time each repo's `ci_ui/` is
 published to `/<benchmark>/ci_ui/` (internal paths and host names masked) and listed in `ui_index.json`;
-a row whose run is listed opens `viewer/index.html?dataBase=…`, any other row opens cap-evolve's copy.
+a row whose run is listed opens `viewer/index.html?dataBase=…`. A row with `has_ui` whose data is not
+here shows "UI archived".
 
-**Move runs from cap-evolve** (every record with `has_ui` whose `bench` belongs to a repo in
-`sections.json`; already-moved runs are skipped):
-
-```bash
-# with checkouts of the benchmark repos next to this one (../parsec, ../spreadsheetbench, …)
-python3 scripts/migrate_ui_snapshots.py --repos-dir .. --dry-run     # what would move
-python3 scripts/migrate_ui_snapshots.py --repos-dir .. --commit      # copy + commit in each repo
-git -C ../<repo> push                                                # then deploy (B)
-```
-
-Only each run's `ui/data/` is copied (not its copy of the viewer, nor raw run folders).
+CI writes each run's folder itself (masked first). For a run published by hand, see below.
 
 **The secret scanner.** Commits to these repos go through IBM Vault Radar, which blocks text that looks
 like a credential. Run data contains false positives (AI tool-call ids read as a Mailsac key, a website's
-public OAuth client id, `pass=` in agent-written code). `migrate_ui_snapshots.py` masks the known ones
-before committing (`scripts/mask_secrets.py`: visible placeholders, tool-call ids mapped consistently so
-the viewer still pairs calls with results). If a commit is still blocked, the script saves the scanner's
-output and prints the command that masks exactly those findings; run it, then commit again. Never bypass
-the scanner. If a finding looks like a **real** secret, stop and tell the team: it is also public on
-cap-evolve's `benchmark-history`.
+public OAuth client id, `pass=` in agent-written code). `scripts/mask_secrets.py <folder>` masks the known
+ones (visible placeholders, tool-call ids mapped consistently so the viewer still pairs calls with
+results). If a commit is still blocked, save the scanner's output to a file and run
+`python3 scripts/mask_secrets.py <repo>/ci_ui --findings <file> --repo-root <repo>`, which masks exactly
+those findings; then commit again. Never bypass the scanner. If a finding looks like a **real** secret,
+stop and tell the team.
 
-**Add a hand-run snapshot** (not on cap-evolve): export it with cap-evolve's `export_static`
+**Add a hand-run snapshot**: export it with cap-evolve's `export_static`
 (cap-evolve's `ci/benchmarks/PUBLISHING.md`, "Open UI" section), copy its `data/` folder to
 `<repo>/ci_ui/<run_id>__<tier>-<bench>/`, run `python3 scripts/mask_secrets.py <repo>/ci_ui`, commit, and
 set `"has_ui": true` in the run's record.
@@ -231,8 +194,8 @@ commit `site/viewer/`. Newer viewers open older runs' data (tested back to July 
 
 ## Tokens and secrets
 
-Everything in the org is public, so **reading needs no token**: the dashboard's deploy and the sync
-workflow clone without credentials. Only cap-evolve's CI writes here, with two fine-grained tokens of the
+Everything in the org is public, so **reading needs no token**: the dashboard's deploy clones without
+credentials. Only cap-evolve's CI writes here, with two fine-grained tokens of the
 bot account `skillberry-bot` (resource owner `skillberry-runs`, permission *Contents: Read and write*):
 
 | Bot token | Repos it reaches | Secret in cap-evolve | Used by |
@@ -257,4 +220,4 @@ bot account `skillberry-bot` (resource owner `skillberry-runs`, permission *Cont
 | Deploy is red when cloning a section's repo | The repo in `sections.json` doesn't exist or isn't public, or `RESULTS_READ_TOKEN` is set but expired (delete the secret: public repos don't need it). The log prints the token's owner and GitHub's reason. The last good site stays live. |
 | Deploy is red at "Validate records" | A record failed `scripts/check_records.py`; the error names the file and the problem. |
 | A link opens a 404 | A record or page links to a file that was renamed or never committed (GitHub Pages is case-sensitive: check the file name's letter case). |
-| Sync run is red | A source record failed validation (listed as `REJECTED` in the log). Fix it at the source, or copy it by hand through A. |
+| A CI run's row is missing | Look at that bench job's `Publish results to skillberry-runs` step in cap-evolve's Actions: a 403 means the results token lacks the repo (E, step 2) or expired; a record that fails `check_records.py` is not pushed. Republishing is safe (`ci/benchmarks/lib/publish_results.sh`, or A by hand). |
