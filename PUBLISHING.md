@@ -40,6 +40,11 @@ CI uses the Actions run id as the id; hand-published runs use `YYYYMMDDNNN` (for
 `20261019001__v6-parsec.json`). The name is the record's identity: adding a file with an existing
 name replaces that record, which is how you correct one.
 
+**One run, one file.** The file name is a record's identity here, and the sync (D) compares by name
+only. If the run is also on cap-evolve's `benchmark-history` (CI wrote it, or it was published there),
+don't add it here under a different name: let D bring it over, or use that same file name. Otherwise the
+run shows up as two rows.
+
 **3. Link a write-up** (optional). Put `summary_url` and/or `report_url` in the record, pointing at the
 *published* page rather than at a file in a repo (see B and C for the URL form). `source` should say how the run
 was produced and published; do not present a hand-finished run as a clean CI run.
@@ -48,10 +53,11 @@ was produced and published; do not present a hand-finished run as a clean CI run
 
 ```bash
 git clone git@github.com:skillberry-runs/dashboard.git && cd dashboard
-git switch -c add-<label>
-cp /tmp/pub/<id>__<label>.json records/
-python3 scripts/check_records.py records/<id>__<label>.json     # must print 0 errors
-git add records && git commit -m "records: add <label>" && git push -u origin HEAD
+# example names; use your record's file name (pasting <...> placeholders fails: the shell reads < and > as redirects)
+git switch -c add-pilot-spreadsheetbench
+cp /tmp/pub/20261117001__pilot-spreadsheetbench.json records/
+python3 scripts/check_records.py records/20261117001__pilot-spreadsheetbench.json     # must print 0 errors
+git add records && git commit -m "records: add pilot-spreadsheetbench" && git push -u origin HEAD
 ```
 
 A CI check runs the same validation on the PR. **Merging deploys automatically** (about a minute).
@@ -122,6 +128,9 @@ per-run UI snapshots and live data are not fetched), repoints links that still n
 `*-history` branches, validates each record, commits as `skillberry-bot`, and starts a deploy. A record
 that fails validation is skipped and the run fails, so it cannot go unnoticed.
 
+- **Fix a record in one place only.** For a run that exists both here and on `benchmark-history`, fix
+  it on `benchmark-history` and sync with `-f update_existing=true`. A fix made only here gets overwritten
+  by the next `update_existing` sync.
 - `-f update_existing=true` also overwrites a record that already exists here but differs from
   cap-evolve's copy (use it after correcting a record at the source). By default such a record is kept
   and listed.
