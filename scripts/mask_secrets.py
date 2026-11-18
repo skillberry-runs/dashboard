@@ -37,6 +37,8 @@ OAUTH = re.compile(r"\b\d{6,}-[a-z0-9]{16,}\.apps\.googleusercontent\.com\b")
 FINDING = re.compile(r"error:\s+(\S+?):(\d+):(\d+):\s+detected (.+?): severity")
 # the value after an assignment-like keyword, as Vault Radar's "Password assignment" sees it
 ASSIGNED_VALUE = re.compile(rb"(?i)(pass(?:word|wd)?|pwd|secret|token|api_?key)(\W{0,8}?[:=]\W{0,8}?)([A-Za-z0-9_.!@#$%^&*+\-]{3,})")
+# fallback for any other finding kind (e.g. "OCI auth token"): the credential-looking token itself
+LONG_TOKEN = re.compile(rb"[A-Za-z0-9+/=_.\-]{16,}")
 
 
 def standing_rules(text: str) -> tuple[str, int]:
@@ -52,21 +54,34 @@ def standing_rules(text: str) -> tuple[str, int]:
     return text, n
 
 
-def mask_at(raw: bytes, line: int, col: int) -> tuple[bytes, bool]:
-    """Mask the assigned value nearest to (line, col) — col is a byte offset in that line."""
+def mask_at(raw: bytes, line: int, col: int, kind: str = "") -> tuple[bytes, bool]:
+    """Mask the value the scanner flagged at (line, col); col is a byte offset in that line.
+
+    An assignment-style finding ("Password assignment") masks the assigned value; any other kind
+    masks the long credential-looking token nearest the position (never one containing quotes or
+    backslashes, so JSON stays valid)."""
     lines = raw.split(b"\n")
     if not 1 <= line <= len(lines):
         return raw, False
     s = lines[line - 1]
+    lo, hi = max(0, col - 64), min(len(s), col + 256)
     best = None
-    for m in ASSIGNED_VALUE.finditer(s, max(0, col - 64), min(len(s), col + 256)):
-        d = abs(m.start() - col)
-        if best is None or d < best[0]:
-            best = (d, m)
+    if "assignment" in kind.lower() or not kind:
+        for m in ASSIGNED_VALUE.finditer(s, lo, hi):
+            d = abs(m.start() - col)
+            if best is None or d < best[0]:
+                best = (d, m.start(3), m.end(3))
+    if best is None:
+        for m in LONG_TOKEN.finditer(s, lo, hi):
+            d = 0 if m.start() <= col < m.end() else min(abs(m.start() - col), abs(m.end() - col))
+            if best is None or d < best[0]:
+                best = (d, m.start(), m.end())
     if best is None:
         return raw, False
-    m = best[1]
-    lines[line - 1] = s[: m.start(3)] + b"<masked>" + s[m.end(3):]
+    _, a, b = best
+    if s[a:b] == b"<masked>":
+        return raw, False
+    lines[line - 1] = s[:a] + b"<masked>" + s[b:]
     return b"\n".join(lines), True
 
 
@@ -111,7 +126,7 @@ def main() -> int:
                 continue
             if kind in ("Mailsac API key", "Google OAuth client ID"):
                 continue  # handled by the standing rules above
-            raw, ok = mask_at(p.read_bytes(), int(line), int(col))
+            raw, ok = mask_at(p.read_bytes(), int(line), int(col), kind)
             if ok:
                 p.write_bytes(raw)
                 done += 1
