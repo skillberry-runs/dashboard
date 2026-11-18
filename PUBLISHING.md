@@ -159,7 +159,8 @@ publish step.
    `skillberry-bot`, open <https://github.com/settings/personal-access-tokens>, edit
    `skillberry-runs-results`, and add the new repo under *Repository access* (permissions stay
    *Contents: Read and write*). Editing doesn't change the token's value, so no secret needs updating.
-   Skip this and the CI run's `aggregate` job fails with a 403 when it pushes to the new repo.
+   Skip this and the CI run's `Publish results to skillberry-runs` step fails with a 403 when it pushes to
+   the new repo.
    (Publishing by hand needs no token: you push with your own account.)
 3. **Register the benchmark** in [`sections.json`](sections.json):
    ```json
@@ -237,12 +238,12 @@ bot account `skillberry-bot` (resource owner `skillberry-runs`, permission *Cont
 | Bot token | Repos it reaches | Secret in cap-evolve | Used by |
 |---|---|---|---|
 | `skillberry-runs-live` | `live` only | `SKILLBERRY_RUNS_LIVE_TOKEN` | the live poller during a run (`ci/benchmarks/lib/live_push.sh`) |
-| `skillberry-runs-results` | `dashboard` and every benchmark repo | `SKILLBERRY_RUNS_RESULTS_TOKEN` | the end-of-run `aggregate` job: records here, "Open UI" data in the benchmark repo |
+| `skillberry-runs-results` | `dashboard` and every benchmark repo | `SKILLBERRY_RUNS_RESULTS_TOKEN` | each bench job's end-of-run `Publish results to skillberry-runs` step (`ci/benchmarks/lib/publish_results.sh`, on the self-hosted runner): records here, "Open UI" data in the benchmark repo |
 
 - **A new benchmark repo** must be added to `skillberry-runs-results` (E, step 2).
 - **They expire on a fixed date** (November 2027). To renew one: as the bot, open it, *Regenerate* it with
   a new expiry, and run `gh secret set <SECRET NAME> -R skillberry-ai/cap-evolve` with the new value.
-  An expired token shows up as a failed CI step (`aggregate` for results; for live, only a warning, since
+  An expired token shows up as a failed CI step (`Publish results to skillberry-runs` for results; for live, only a warning, since
   live updates are best-effort).
 - If a section's repo is ever made **private**, the deploy will need a read token again: set
   `RESULTS_READ_TOKEN` in this repo (a bot token with *Contents: Read* on it); `pages.yml` uses it when set.
