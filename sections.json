@@ -3,7 +3,7 @@
   {"repo": "spreadsheetbench", "title": "SpreadsheetBench"},
   {"repo": "skillsbench", "title": "SkillsBench"},
   {"repo": "tau", "title": "tau2", "benches": ["tau2", "tau2_custom_blackbox", "tau2_custom_direct", "tau2_custom_spa", "tau2_sierra", "tau2_sierra_blackbox", "tau2_blackbox", "skillberry_tau2_direct", "skillberry_tau2_spa"]},
-  {"repo": "swe", "title": "SWE-bench", "benches": ["swebench", "swebench-verified", "rh-swebench"], "skip_ui": {"manual__full-rh-swebench-v4__full-rh-swebench": "484 MB; secret scanner times out on it and flags Go source in its trajectories (OCI-token false positives). Left on cap-evolve's benchmark-history for now (2026-11-17)."}},
+  {"repo": "swe", "title": "SWE-bench", "benches": ["swebench", "swebench-verified", "rh-swebench"], "skip_ui": {"manual__full-rh-swebench-v4__full-rh-swebench": "Not moved (2026-11-18): IBM Vault Radar flags Argo CD Go source in its trajectories (OCI-token false positives) and masking would mean rewriting that code; the full data is in the Box backup of cap-evolve's benchmark-history."}},
   {"repo": "epic", "title": "Epic", "benches": ["epic-creator", "epic-decompose"]},
   {"repo": "rfe", "title": "RFE Creator", "benches": ["rfe-creator"], "site": false},
   {"repo": "appworld", "title": "AppWorld", "benches": ["appworld"], "site": false}
