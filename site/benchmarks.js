@@ -6,7 +6,20 @@
 // viewer (dashboard-ui), and the in-progress run data still comes from cap-evolve's
 // benchmark-history live/ and Actions API, because cap-evolve's CI is still the writer.
 const CAP_EVOLVE_SITE = "https://skillberry-ai.github.io/cap-evolve";
-const RAW = "https://raw.githubusercontent.com/skillberry-ai/cap-evolve/benchmark-history";
+// Live ("Watch live") data of a running CI job: one branch per job, <run_id>__<tier>-<bench>, in
+// skillberry-runs/live (see that repo's README). LEGACY_LIVE is where cap-evolve's CI wrote it before
+// 2026-11 (live/<slug>/ on its benchmark-history branch); used only for a job whose branch does not
+// exist, and removable once that branch is gone.
+const LIVE_RAW = "https://raw.githubusercontent.com/skillberry-runs/live";
+const LEGACY_LIVE = "https://raw.githubusercontent.com/skillberry-ai/cap-evolve/benchmark-history/live";
+async function liveDataBase(slug) {
+  const fresh = `${LIVE_RAW}/${slug}/data`;
+  try {
+    const r = await fetch(`${fresh}/runs.json`, { method: "HEAD", cache: "no-store" });
+    if (r.ok) return fresh;
+  } catch (e) { /* fall through */ }
+  return `${LEGACY_LIVE}/${slug}/data`;
+}
 const GH_API = "https://api.github.com/repos/skillberry-ai/cap-evolve";
 // Tier is matched GENERICALLY: the workflow's TIERS list grows (smoke, pilot, full,
 // full_verified, …) and hardcoding it here silently hides new tiers from the live panel — a
@@ -33,7 +46,7 @@ const benchLabel = (b) => BENCH_LABEL[b] || b;
 // benchmarks.json/meta.json are same-origin: pages.yml renders them fresh from
 // benchmark-history's records/ on every deploy, they're never committed to that branch
 // (an ever-growing aggregate rewritten in full on every run — see pages.yml for why).
-// RAW is still used below for live/ (in-progress run data a once-per-run deploy can't serve).
+// LIVE_RAW (above) serves in-progress run data, which a once-per-run deploy can't.
 const FEED = new URLSearchParams(location.search).has("fixture")
   ? "benchmarks.fixture.json" : "benchmarks.json";
 let RECORDS = [], sortKey = "date", sortDir = -1;
@@ -118,6 +131,10 @@ async function loadRunning() {
         });
       }
     }
+    // Resolve where each running job's live data is (new repo, else the legacy location).
+    await Promise.all(items.filter((it) => it.live).map(async (it) => {
+      it.dataBase = await liveDataBase(`${it.runId}__${it.tier}-${it.bench}`);
+    }));
     renderRunning(items);
   } catch (e) {
     panel.hidden = true;
@@ -138,11 +155,11 @@ function renderRunning(items) {
       return `<li><span class="badge badge-amber">queued</span>
         <a href="${esc(it.jobUrl)}" target="_blank" rel="noopener">${esc(it.tier)} / ${esc(benchLabel(it.bench))}</a></li>`;
     }
-    const dataBase = encodeURIComponent(`${RAW}/live/${it.runId}__${it.tier}-${it.bench}/data`);
+    const dataBase = encodeURIComponent(it.dataBase || `${LIVE_RAW}/${it.runId}__${it.tier}-${it.bench}/data`);
     return `<li><span class="badge badge-accent">live</span>
       <a href="${esc(it.jobUrl)}" target="_blank" rel="noopener">${esc(it.tier)} / ${esc(benchLabel(it.bench))}</a>
       <span class="elapsed" data-started="${esc(it.startedAt)}"></span>
-      — <a href="${CAP_EVOLVE_SITE}/dashboard-ui/index.html?dataBase=${dataBase}#/runs/run_suite" target="_blank" rel="noopener">Watch live</a></li>`;
+      — <a href="viewer/index.html?dataBase=${dataBase}#/runs/run_suite" target="_blank" rel="noopener">Watch live</a></li>`;
   }).join("");
   updateElapsed();
 }

@@ -1,0 +1,32 @@
+name: Check site
+
+# The "Running now" panel and the run table must keep matching cap-evolve's Benchmarks workflow
+# (its tiers and benches). Runs on site changes, and nightly to catch a new tier added in cap-evolve.
+# See scripts/check_site.py (moved here from cap-evolve's test_site_live_panel_tiers.py).
+
+on:
+  pull_request:
+    paths:
+      - "site/**"
+      - "scripts/check_site.py"
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/check_site.py"
+  schedule:
+    - cron: "29 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 scripts/check_site.py

@@ -46,6 +46,7 @@ def section_nav(site: str) -> str:
     sections = json.loads(SECTIONS_FILE.read_text(encoding="utf-8")) if SECTIONS_FILE.exists() else []
     return "\n".join(
         f'      <a href="{site}/{s["repo"]}/">{html_lib.escape(s["title"])}</a>' for s in sections
+        if s.get("site", True)  # "site": false = Open UI data only, no section page yet
     )
 
 # (pattern, replacement) applied to published text. Order matters: paths before hosts.

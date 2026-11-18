@@ -74,7 +74,7 @@ jobs:
           python3 -c "
           import json
           for x in json.load(open('sections.json')):
-              print('|'.join([x['repo'], x['title']]))
+              print('|'.join([x['repo'], x['title'], 'pages' if x.get('site', True) else 'data-only']))
           " > _sections.txt
           # Fine-grained tokens expire on a fixed date. Log it every deploy and warn 30 days
           # ahead, so an expiry shows up as a warning first, not as a failed deploy.
@@ -90,7 +90,7 @@ jobs:
               fi
             fi
           fi
-          while IFS='|' read -r repo title <&3; do
+          while IFS='|' read -r repo title kind <&3; do
             rm -rf "_src_$repo"
             if [ -n "$RESULTS_READ_TOKEN" ]; then
               url="https://x-access-token:${RESULTS_READ_TOKEN}@github.com/skillberry-runs/$repo.git"
@@ -105,9 +105,12 @@ jobs:
                 echo "repo check:  $(api repos/skillberry-runs/$repo | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("full_name") or d.get("message"))')"
               fi
               echo "::error::cloning skillberry-runs/$repo failed (repo missing or private? token expired?)"; exit 1; }
-            python3 scripts/build_reports.py --src "_src_$repo" --out "site/$repo" \
-              --repo "skillberry-runs/$repo" --title "$title"
-            test -f "site/$repo/index.html"
+            # "site": false in sections.json = no write-ups yet: publish its Open UI data only.
+            if [ "$kind" = "pages" ]; then
+              python3 scripts/build_reports.py --src "_src_$repo" --out "site/$repo" \
+                --repo "skillberry-runs/$repo" --title "$title"
+              test -f "site/$repo/index.html"
+            fi
             # Per-run "Open UI" data (ci_ui/), opened by the shared viewer in site/viewer/.
             python3 scripts/publish_ci_ui.py --src "_src_$repo" --repo "$repo" --site site
           done 3< _sections.txt
