@@ -14,6 +14,7 @@ published by hand, write-ups, new benchmarks, tokens.
 | **Write-ups and report pages** per benchmark | the benchmark's repo, `skillberry-runs/<repo>` (public; the list is [`sections.json`](sections.json)) | `*.md` and `ui/*.html` only, at `/<benchmark>/…` |
 | Raw data, `recipes/`, `artifacts/`, `presentations/` | the benchmark's repo | **no**: never published (they contain internal paths) |
 | **"Open UI" data** per run | the benchmark's repo: `ci_ui/<run_id>__<tier>-<bench>/` | yes: `/<benchmark>/ci_ui/…`, opened in the shared viewer (`site/viewer/`) |
+| **Run folder** per run: README, report, metrics, the optimized capability, the recipe | the benchmark's repo: `ci_runs/<run_id>__<tier>-<bench>/` (see G) | its `README.md` and `report.md` only, at `/<benchmark>/ci_runs/…`; the row's **Report ↗** link opens the README |
 | "Watch live" data of a running CI job | [`skillberry-runs/live`](https://github.com/skillberry-runs/live), one branch per job, deleted when it ends | read live by the page |
 
 ## Which section do I need?
@@ -25,6 +26,7 @@ published by hand, write-ups, new benchmarks, tokens.
 | attach a short note to a hand-published row | **C** |
 | publish a benchmark that has no section yet (e.g. AppWorld) | **E** |
 | add or move a run's "Open UI" data | **F** |
+| understand or add a run's folder (`ci_runs/`) | **G** |
 
 ---
 
@@ -189,6 +191,31 @@ set `"has_ui": true` in the run's record.
 
 **Update the viewer** to cap-evolve's latest dashboard: `scripts/update_viewer.sh` (needs node), then
 commit `site/viewer/`. Newer viewers open older runs' data (tested back to July 2026).
+
+## G. Run folders (`ci_runs/`)
+
+Every CI run since 2026-11 also gets a folder in its benchmark's repo, next to its Open UI data and
+named the same way, written in the same commit:
+
+```
+<benchmark repo>/ci_runs/<run_id>__<tier>-<bench>/
+  README.md               generated: the run's settings, results, links, files, and how to re-run it
+  report.md               the run's metrics report (the same text as its PR comment)
+  runmeta.json            how it was launched (models, tier, iterations, trials, commit, ...)
+  metrics.jsonl           one row per task: baseline vs optimized reward
+  steps.jsonl             one row per iteration: cost and time
+  final.json              the sealed test result
+  capability.diff         the optimized capability vs the seed (SkillsBench: a diffstat only, licensed content)
+  optimized_capability/   the optimized capability itself
+  recipe/                 capevolve.yaml, split_ids.json, the tier's overrides.env
+```
+
+The row's `report_url` points at the README's page (`/<benchmark>/ci_runs/<name>/README.html`; for a
+repo with `"site": false`, at the folder on GitHub). Raw run data (traces, candidates, logs) is not in
+it: the Open UI data covers browsing it. cap-evolve's `ci/benchmarks/lib/run_folder.py` builds the folder;
+a run published by hand uses the same script and layout (cap-evolve's `ci/benchmarks/PUBLISHING.md`).
+Runs from before 2026-11-18 have a folder only where their CI artifact still existed (backfilled; no
+`recipe/`, which the artifacts never held).
 
 ---
 
