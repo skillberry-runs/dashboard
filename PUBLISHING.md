@@ -132,19 +132,48 @@ that fails validation is skipped and the run fails, so it cannot go unnoticed.
 
 ## E. Publish a new benchmark (for example AppWorld)
 
-1. **Create the repo** `skillberry-runs/<benchmark>`, **public** (everything in the org is public, and the
-   deploy clones without credentials). Put a `README.md` (it becomes the front page; or a `HOME.md`),
-   write-ups as `*.md`, and report pages as `ui/*.html`. Only `.md` and `.html` files are rendered on the
-   site; raw data (JSON and so on) and anything under `artifacts/`, `recipes/` or `presentations/` are
-   not, but they are still readable in the public repo, so keep secrets and internal-only material out
-   of the repo altogether (the secret scanner checks every commit).
-2. **Register the section.** Add an entry to [`sections.json`](sections.json):
-   `{"repo": "<benchmark>", "title": "<Display name>", "benches": ["<bench>", …]}`. `benches` lists the
-   `bench` values of the records whose "Open UI" data belongs in this repo (default: the repo name; a
-   `tau` repo lists `tau2`, `tau2_sierra`, `tau2_custom_direct`, …). Add a link next to the others in `site/index.html`'s menu; the menu on
-   the section pages follows `sections.json` by itself.
-3. **Move its runs' "Open UI" data** into the repo (F).
-4. **Deploy** (B) and open `/<benchmark>/`. Add its run rows with A.
+Before the first run of a benchmark that has no repo here can be published, by CI or by hand, the
+benchmark needs a repo, the CI token needs access to it, and `sections.json` needs to say which runs
+go there. Do the steps in this order: a CI run that finishes before step 2 is done fails at its
+publish step.
+
+1. **Create the repo** `skillberry-runs/<benchmark>`, **public** (an org owner does this): everything in
+   the org is public, and the deploy clones without credentials. Give it a `README.md`, which becomes
+   the section's front page (or a `HOME.md`, which then takes precedence). Write-ups go in as `*.md`,
+   report pages as `ui/*.html`. Only `.md` and `.html` files are rendered on the site; raw data (JSON
+   and so on) and anything under `artifacts/`, `recipes/` or `presentations/` is not, but all of it is
+   readable in the public repo, so keep secrets and internal-only material out of the repo altogether
+   (the secret scanner checks every commit made from an IBM machine).
+2. **Give the CI token access to the repo.** cap-evolve's CI writes each run's "Open UI" data into the
+   benchmark's repo with the bot's **`skillberry-runs-results`** token (cap-evolve secret
+   `SKILLBERRY_RUNS_RESULTS_TOKEN`). That token only reaches the repos listed on it. Log in as
+   `skillberry-bot`, open <https://github.com/settings/personal-access-tokens>, edit
+   `skillberry-runs-results`, and add the new repo under *Repository access* (permissions stay
+   *Contents: Read and write*). Editing doesn't change the token's value, so no secret needs updating.
+   Skip this and the CI run's `aggregate` job fails with a 403 when it pushes to the new repo.
+   (Publishing by hand needs no token: you push with your own account.)
+3. **Register the benchmark** in [`sections.json`](sections.json):
+   ```json
+   {"repo": "<benchmark>", "title": "<Display name>", "benches": ["<bench>", …]}
+   ```
+   `benches` lists the exact `bench` values its run records carry; that's how CI decides which repo a
+   run's "Open UI" data goes to (default: the repo name). A `tau` repo, for example, lists `tau2`,
+   `tau2_sierra`, `tau2_sierra_blackbox`, …. A bench that's in no entry still gets its row, with a
+   CI warning that its "Open UI" data was not published.
+   - While the repo has no write-ups yet, add `"site": false`: its "Open UI" data is still published,
+     but there's no section page or menu entry. (`rfe` and `appworld` start this way.)
+   - Once it has a section page, add a link next to the others in `site/index.html`'s menu (the menu on
+     the section pages follows `sections.json` by itself).
+4. **If CI should run it** (cap-evolve side): the benchmark must be in cap-evolve's
+   `.github/workflows/benchmarks.yml` (`BENCHES`, and the dispatch options) with its
+   `ci/benchmarks/<bench>/` folder; see cap-evolve's `ci/benchmarks/README.md`. The nightly
+   [`check-site.yml`](.github/workflows/check-site.yml) confirms the "Running now" panel recognises it.
+5. **Publish runs.** From here CI publishes every run of it automatically (its row here, its "Open UI"
+   data in the repo). To publish by hand: the row with A, its "Open UI" data with F, write-ups with B.
+   Runs that are already on cap-evolve's `benchmark-history` come over with D, then
+   `scripts/migrate_ui_snapshots.py` (F).
+6. **Deploy and check** (B): open `/<benchmark>/` (once it has a section) and the run's row, and its
+   **Open UI** link.
 
 ## F. "Open UI" data (`ci_ui/`) and the shared viewer
 
@@ -192,17 +221,22 @@ commit `site/viewer/`. Newer viewers open older runs' data (tested back to July 
 
 ## Tokens and secrets
 
-| Secret | Lives in | Used for |
-|---|---|---|
-| `RESULTS_READ_TOKEN` | this repo | optional since the repos went public: if set, the deploy clones with it |
-| `SKILLSBENCH_READ_TOKEN` | cap-evolve | cap-evolve's deploy reads `skillsbench` (same token as above; retired once cap-evolve drops its SkillsBench section) |
-| `CAP_EVOLVE_DISPATCH_TOKEN` | `skillberry-runs/skillsbench` | starts cap-evolve's deploy when `skillsbench` changes (same: retired with that section) |
+Everything in the org is public, so **reading needs no token**: the dashboard's deploy and the sync
+workflow clone without credentials. Only cap-evolve's CI writes here, with two fine-grained tokens of the
+bot account `skillberry-bot` (resource owner `skillberry-runs`, permission *Contents: Read and write*):
 
-All three are fine-grained tokens of the bot account `skillberry-bot` and **expire on a fixed date**
-(set to one year). Every deploy logs the expiry of `RESULTS_READ_TOKEN` and warns 30 days ahead. To renew:
-as the bot, open the token, *Regenerate* it with a new expiry, and set the new value in each place the
-token is used (`gh secret set RESULTS_READ_TOKEN -R skillberry-runs/dashboard`, and
-`SKILLSBENCH_READ_TOKEN` in cap-evolve). The sync workflow needs no token of its own.
+| Bot token | Repos it reaches | Secret in cap-evolve | Used by |
+|---|---|---|---|
+| `skillberry-runs-live` | `live` only | `SKILLBERRY_RUNS_LIVE_TOKEN` | the live poller during a run (`ci/benchmarks/lib/live_push.sh`) |
+| `skillberry-runs-results` | `dashboard` and every benchmark repo | `SKILLBERRY_RUNS_RESULTS_TOKEN` | the end-of-run `aggregate` job: records here, "Open UI" data in the benchmark repo |
+
+- **A new benchmark repo** must be added to `skillberry-runs-results` (E, step 2).
+- **They expire on a fixed date** (November 2027). To renew one: as the bot, open it, *Regenerate* it with
+  a new expiry, and run `gh secret set <SECRET NAME> -R skillberry-ai/cap-evolve` with the new value.
+  An expired token shows up as a failed CI step (`aggregate` for results; for live, only a warning, since
+  live updates are best-effort).
+- If a section's repo is ever made **private**, the deploy will need a read token again: set
+  `RESULTS_READ_TOKEN` in this repo (a bot token with *Contents: Read* on it); `pages.yml` uses it when set.
 
 ## Troubleshooting
 
