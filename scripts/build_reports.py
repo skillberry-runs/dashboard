@@ -8,7 +8,8 @@ What gets published (and what doesn't) is a deliberate policy, agreed when these
 were made public on the dashboard (2026-11-10):
 
 - PUBLISHED: every *.md write-up (rendered to HTML in the site chrome) and every
-  standalone *.html report page (copied, with links rewritten), outside UNPUBLISHED_TOP.
+  standalone *.html report page (copied, with links rewritten), outside UNPUBLISHED_TOP;
+  in ci_runs/<run>/ (CI's per-run folders) only README.md and report.md.
 - NOT PUBLISHED: raw results data (*.json, *.jsonl, logs, ...), and everything under
   UNPUBLISHED_TOP (recipes/ and artifacts/ embed internal cluster paths; presentations/
   are slide decks with their own JS bundles). Links to those go to the source repo on
@@ -65,10 +66,18 @@ def redact(text: str) -> tuple[str, int]:
     return text, n
 
 
+# ci_runs/<run>/ (one folder per CI run, written by cap-evolve's CI): only these become pages;
+# the rest (raw JSON, diffs, the optimized capability's own .md files) stays a file in the repo,
+# linked from the run's README.
+CI_RUN_PAGES = {"README.md", "report.md"}
+
+
 def is_published(rel: str) -> bool:
     parts = rel.split("/")
     if parts[0] in UNPUBLISHED_TOP or parts[-1] in SKIP_FILES:
         return False
+    if parts[0] == "ci_runs":
+        return len(parts) == 3 and parts[2] in CI_RUN_PAGES
     return rel.endswith((".md", ".html"))
 
 
